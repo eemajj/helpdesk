@@ -1,11 +1,12 @@
 import { Router, Request, Response } from 'express'
 import { prisma } from '../db/connection'
 import { authMiddleware, requireSupport } from '../middleware/auth'
+import { cacheMiddleware } from '../middleware/cache'
 
 export const dashboardRoutes = Router()
 
-// Dashboard stats
-dashboardRoutes.get('/stats', authMiddleware, requireSupport, async (req: Request, res: Response) => {
+// Dashboard stats - CACHED
+dashboardRoutes.get('/stats', authMiddleware, requireSupport, cacheMiddleware(60), async (req: Request, res: Response) => {
   try {
     const [
       totalTickets,
@@ -41,8 +42,8 @@ dashboardRoutes.get('/stats', authMiddleware, requireSupport, async (req: Reques
   }
 })
 
-// Recent tickets
-dashboardRoutes.get('/tickets', authMiddleware, requireSupport, async (req: Request, res: Response) => {
+// Recent tickets - CACHED
+dashboardRoutes.get('/tickets', authMiddleware, requireSupport, cacheMiddleware(30), async (req: Request, res: Response) => {
   try {
     const limit = parseInt(req.query.limit as string) || 10
 
@@ -87,8 +88,8 @@ dashboardRoutes.get('/tickets', authMiddleware, requireSupport, async (req: Requ
   }
 })
 
-// Get notifications for the logged-in user
-dashboardRoutes.get('/notifications', authMiddleware, async (req: Request, res: Response) => {
+// Get notifications for the logged-in user - CACHED
+dashboardRoutes.get('/notifications', authMiddleware, cacheMiddleware(10), async (req: Request, res: Response) => {
   try {
     // @ts-ignore
     const userId = req.user.userId;
@@ -149,8 +150,8 @@ dashboardRoutes.put('/notifications/:id/read', authMiddleware, async (req: Reque
   }
 });
 
-// Get all users for admin dashboard
-dashboardRoutes.get('/users', authMiddleware, requireSupport, async (req: Request, res: Response) => {
+// Get all users for admin dashboard - CACHED
+dashboardRoutes.get('/users', authMiddleware, requireSupport, cacheMiddleware(120), async (req: Request, res: Response) => {
   try {
     // @ts-ignore
     if (req.user.role !== 'admin') {

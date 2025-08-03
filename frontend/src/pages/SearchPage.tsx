@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../hooks/useLanguage';
 import { Navigate } from 'react-router-dom';
@@ -6,6 +6,8 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import AdvancedSearch from '../components/AdvancedSearch';
 import { useWebSocket } from '../hooks/useWebSocket';
+import { useDebounce } from '../hooks/useDebounce';
+import { useVirtualization } from '../hooks/useVirtualization';
 import { 
   TicketIcon, 
   UserIcon, 
@@ -28,18 +30,20 @@ interface SearchFilters {
 
 interface Ticket {
   id: number;
-  ticket_id: string;
-  problem_type: string;
-  problem_description: string;
-  full_name: string;
+  ticketId: string;
+  problemType: string;
+  problemDescription: string;
+  fullName: string;
   department: string;
-  division: string;
+  division?: string;
   status: string;
   priority: string;
-  created_at: string;
-  updated_at: string;
-  assigned_to_name?: string;
-  resolved_at?: string;
+  createdAt: string;
+  updatedAt?: string;
+  assignedTo?: {
+    fullName: string;
+  };
+  resolvedAt?: string;
 }
 
 const SearchPage: React.FC = () => {
@@ -51,6 +55,27 @@ const SearchPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
   const [currentFilters, setCurrentFilters] = useState<SearchFilters | null>(null);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  
+  // Debounce search input
+  const debouncedSearchKeyword = useDebounce(searchKeyword, 300);
+  
+  // Virtualization for large lists
+  const { visibleItems, handleScroll, totalHeight } = useVirtualization(tickets, {
+    itemHeight: 80,
+    containerHeight: 600,
+    overscan: 5
+  });
+  
+  // Memoized filtered tickets for performance
+  const filteredTickets = useMemo(() => {
+    if (!debouncedSearchKeyword) return tickets;
+    return tickets.filter(ticket => 
+      ticket.ticket_id.toLowerCase().includes(debouncedSearchKeyword.toLowerCase()) ||
+      ticket.full_name.toLowerCase().includes(debouncedSearchKeyword.toLowerCase()) ||
+      ticket.problem_type.toLowerCase().includes(debouncedSearchKeyword.toLowerCase())
+    );
+  }, [tickets, debouncedSearchKeyword]);
 
   const api = axios.create({
     baseURL: process.env.REACT_APP_API_URL,
@@ -77,15 +102,44 @@ const SearchPage: React.FC = () => {
     try {
       const params = new URLSearchParams();
       
-      // เพิ่มพารามิเตอร์การค้นหา
-      if (filters.keyword) params.append('search', filters.keyword);
-      if (filters.status) params.append('status', filters.status);
-      if (filters.priority) params.append('priority', filters.priority);
-      if (filters.problemType) params.append('problem_type', filters.problemType);
-      if (filters.department) params.append('department', filters.department);
-      if (filters.dateFrom) params.append('date_from', filters.dateFrom);
-      if (filters.dateTo) params.append('date_to', filters.dateTo);
-      if (filters.assignedTo) params.append('assigned_to', filters.assignedTo);
+      // Add search parameters - ensure at least one filter is provided
+      let hasFilters = false;
+      
+      if (filters.keyword && filters.keyword.trim()) {
+        params.append('search', filters.keyword.trim());
+        hasFilters = true;
+      }
+      if (filters.status && filters.status !== 'all') {
+        params.append('status', filters.status);
+        hasFilters = true;
+      }
+      if (filters.priority && filters.priority !== 'all') {
+        params.append('priority', filters.priority);
+        hasFilters = true;
+      }
+      if (filters.problemType && filters.problemType !== 'all') {
+        params.append('problem_type', filters.problemType);
+        hasFilters = true;
+      }
+      if (filters.department && filters.department !== 'all') {
+        params.append('department', filters.department);
+        hasFilters = true;
+      }
+      if (filters.dateFrom) {
+        params.append('date_from', filters.dateFrom);
+        hasFilters = true;
+      }
+      if (filters.dateTo) {
+        params.append('date_to', filters.dateTo);
+        hasFilters = true;
+      }
+      if (filters.assignedTo && filters.assignedTo !== 'all') {
+        params.append('assigned_to', filters.assignedTo);
+        hasFilters = true;
+      }
+      
+      // Allow search without filters to show recent tickets
+      console.log('Search filters:', { filters, hasFilters, params: params.toString() });
       
       params.append('page', page.toString());
       params.append('limit', pagination.limit.toString());
@@ -99,6 +153,12 @@ const SearchPage: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Search error:', error);
+      console.error('Search error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        url: error.config?.url,
+        params: error.config?.params
+      });
       if (error.response?.status !== 401) {
         toast.error('เกิดข้อผิดพลาดในการค้นหา');
       }
@@ -127,8 +187,8 @@ const SearchPage: React.FC = () => {
   useEffect(() => {
     if (lastTicketUpdate && currentFilters) {
       setTickets(prev => prev.map(ticket => 
-        ticket.ticket_id === lastTicketUpdate.ticket_id 
-          ? { ...ticket, status: lastTicketUpdate.status, updated_at: lastTicketUpdate.updated_at }
+        ticket.ticketId === lastTicketUpdate.ticket_id 
+          ? { ...ticket, status: lastTicketUpdate.status, updatedAt: lastTicketUpdate.updated_at }
           : ticket
       ));
     }
@@ -229,7 +289,7 @@ const SearchPage: React.FC = () => {
                 </h2>
                 {pagination.total > 0 && (
                   <span className="text-sm text-gray-600 dark:text-gray-400">
-                    แสดง {((pagination.page - 1) * pagination.limit) + 1}-{Math.min(pagination.page * pagination.limit, pagination.total)} จาก {pagination.total.toLocaleString()} รายการ
+                    แสดง {((pagination.current - 1) * pagination.limit) + 1}-{Math.min(pagination.current * pagination.limit, pagination.count)} จาก {pagination.count.toLocaleString()} รายการ
                   </span>
                 )}
               </div>
@@ -270,7 +330,7 @@ const SearchPage: React.FC = () => {
                       <div className="flex items-center space-x-3">
                         <TicketIcon className="h-5 w-5 text-primary-500" />
                         <span className="font-mono text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-                          {ticket.ticket_id}
+                          {ticket.ticketId}
                         </span>
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(ticket.status)}`}>
                           {ticket.status}
@@ -281,51 +341,51 @@ const SearchPage: React.FC = () => {
                       </div>
                       
                       <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {new Date(ticket.created_at).toLocaleDateString('th-TH', {
+                        {ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString('th-TH', {
                           year: 'numeric',
                           month: 'short',
                           day: 'numeric',
                           hour: '2-digit',
                           minute: '2-digit'
-                        })}
+                        }) : 'ไม่ระบุ'}
                       </div>
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
                         <h3 className="font-medium text-gray-900 dark:text-white mb-2">
-                          {ticket.problem_type}
+                          {ticket.problemType}
                         </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
-                          {ticket.problem_description}
+                          {ticket.problemDescription}
                         </p>
                         
                         <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 space-x-4">
                           <span className="flex items-center">
                             <UserIcon className="h-3 w-3 mr-1" />
-                            {ticket.full_name}
+                            {ticket.fullName}
                           </span>
-                          <span>{ticket.department} - {ticket.division}</span>
+                          <span>{ticket.department}{ticket.division ? ` - ${ticket.division}` : ''}</span>
                         </div>
                       </div>
 
                       <div className="space-y-2">
-                        {ticket.assigned_to_name && (
+                        {ticket.assignedTo?.fullName && (
                           <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
                             <span className="font-medium mr-2">ผู้รับผิดชอบ:</span>
-                            <span>{ticket.assigned_to_name}</span>
+                            <span>{ticket.assignedTo.fullName}</span>
                           </div>
                         )}
                         
                         <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
                           <CalendarIcon className="h-3 w-3 mr-2" />
-                          <span>อัปเดตล่าสุด: {new Date(ticket.updated_at).toLocaleDateString('th-TH')}</span>
+                          <span>อัปเดตล่าสุด: {ticket.updatedAt ? new Date(ticket.updatedAt).toLocaleDateString('th-TH') : 'ไม่ระบุ'}</span>
                         </div>
 
-                        {ticket.resolved_at && (
+                        {ticket.resolvedAt && (
                           <div className="flex items-center text-xs text-green-600 dark:text-green-400">
                             <ClockIcon className="h-3 w-3 mr-2" />
-                            <span>แก้ไขเสร็จ: {new Date(ticket.resolved_at).toLocaleDateString('th-TH')}</span>
+                            <span>แก้ไขเสร็จ: {new Date(ticket.resolvedAt).toLocaleDateString('th-TH')}</span>
                           </div>
                         )}
                       </div>
@@ -336,26 +396,26 @@ const SearchPage: React.FC = () => {
             )}
 
             {/* Pagination */}
-            {pagination.totalPages > 1 && (
+            {pagination.total > 1 && (
               <div className="flex items-center justify-center space-x-2 pt-6">
                 <button
-                  onClick={() => handlePageChange(pagination.page - 1)}
-                  disabled={pagination.page <= 1}
+                  onClick={() => handlePageChange(pagination.current - 1)}
+                  disabled={pagination.current <= 1}
                   className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   ก่อนหน้า
                 </button>
                 
-                {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                {Array.from({ length: Math.min(5, pagination.total) }, (_, i) => {
                   let pageNum: number;
-                  if (pagination.totalPages <= 5) {
+                  if (pagination.total <= 5) {
                     pageNum = i + 1;
-                  } else if (pagination.page <= 3) {
+                  } else if (pagination.current <= 3) {
                     pageNum = i + 1;
-                  } else if (pagination.page >= pagination.totalPages - 2) {
-                    pageNum = pagination.totalPages - 4 + i;
+                  } else if (pagination.current >= pagination.total - 2) {
+                    pageNum = pagination.total - 4 + i;
                   } else {
-                    pageNum = pagination.page - 2 + i;
+                    pageNum = pagination.current - 2 + i;
                   }
                   
                   return (
@@ -363,7 +423,7 @@ const SearchPage: React.FC = () => {
                       key={pageNum}
                       onClick={() => handlePageChange(pageNum)}
                       className={`px-3 py-2 text-sm rounded-lg transition-colors ${
-                        pageNum === pagination.page
+                        pageNum === pagination.current
                           ? 'bg-primary-600 text-white'
                           : 'border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
                       }`}
@@ -374,8 +434,8 @@ const SearchPage: React.FC = () => {
                 })}
                 
                 <button
-                  onClick={() => handlePageChange(pagination.page + 1)}
-                  disabled={pagination.page >= pagination.totalPages}
+                  onClick={() => handlePageChange(pagination.current + 1)}
+                  disabled={pagination.current >= pagination.total}
                   className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   ถัดไป

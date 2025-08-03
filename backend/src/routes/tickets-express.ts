@@ -3,35 +3,123 @@ import { z } from 'zod'
 import { prisma } from '../db/connection'
 import { authMiddleware, requireSupport } from '../middleware/auth';
 import { websocketService } from '../services/websocketService';
+import { cacheMiddleware, invalidateTicketCache } from '../middleware/cache';
 
 export const ticketRoutes = Router()
 
-// Search tickets (Public endpoint - for ticket tracking)  
-ticketRoutes.get('/search', async (req: Request, res: Response) => {
+// Advanced search tickets (Public endpoint) - OPTIMIZED & CACHED
+ticketRoutes.get('/search', cacheMiddleware(60), async (req: Request, res: Response) => {
   try {
-    const { search, page = '1', limit = '20' } = req.query
+    // Decode URL parameters properly
+    const { 
+      search, 
+      status, 
+      priority, 
+      problem_type, 
+      department, 
+      date_from, 
+      date_to, 
+      assigned_to,
+      page = '1', 
+      limit = '20' 
+    } = req.query
+
+    const pageNum = Math.max(1, parseInt(page as string) || 1)
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit as string) || 20))
+    const skip = (pageNum - 1) * limitNum
+
+    // Build dynamic where clause
+    const where: any = { AND: [] }
     
-    if (!search || typeof search !== 'string') {
-      return res.status(400).json({
-        success: false,
-        error: 'กรุณาระบุคำค้นหา'
+    console.log('Search request params:', {
+      search,
+      status: status ? decodeURIComponent(status as string) : null,
+      priority,
+      problem_type,
+      department
+    })
+
+    // Text search across multiple fields
+    if (search && typeof search === 'string' && search.trim().length > 0) {
+      const searchTerm = search.trim()
+      where.AND.push({
+        OR: [
+          { ticketId: { contains: searchTerm, mode: 'insensitive' } },
+          { fullName: { contains: searchTerm, mode: 'insensitive' } },
+          { problemType: { contains: searchTerm, mode: 'insensitive' } },
+          { department: { contains: searchTerm, mode: 'insensitive' } },
+          { problemDescription: { contains: searchTerm, mode: 'insensitive' } }
+        ]
       })
     }
 
-    const pageNum = parseInt(page as string)
-    const limitNum = parseInt(limit as string)
-    const skip = (pageNum - 1) * limitNum
+    // Status filter - decode Thai characters
+    if (status && status !== 'all') {
+      try {
+        const decodedStatus = decodeURIComponent(status as string)
+        where.AND.push({ status: decodedStatus })
+        console.log('Status filter applied:', decodedStatus)
+      } catch (error) {
+        console.error('Failed to decode status:', status, error)
+        where.AND.push({ status: status as string })
+      }
+    }
+
+    // Priority filter - decode Thai characters
+    if (priority && priority !== 'all') {
+      try {
+        const decodedPriority = decodeURIComponent(priority as string)
+        where.AND.push({ priority: decodedPriority })
+      } catch (error) {
+        where.AND.push({ priority: priority as string })
+      }
+    }
+
+    // Problem type filter - decode Thai characters
+    if (problem_type && problem_type !== 'all') {
+      try {
+        const decodedProblemType = decodeURIComponent(problem_type as string)
+        where.AND.push({ problemType: decodedProblemType })
+      } catch (error) {
+        where.AND.push({ problemType: problem_type as string })
+      }
+    }
+
+    // Department filter - decode Thai characters
+    if (department && department !== 'all') {
+      try {
+        const decodedDepartment = decodeURIComponent(department as string)
+        where.AND.push({ department: decodedDepartment })
+      } catch (error) {
+        where.AND.push({ department: department as string })
+      }
+    }
+
+    // Date range filter
+    if (date_from || date_to) {
+      const dateFilter: any = {}
+      if (date_from) dateFilter.gte = new Date(date_from as string)
+      if (date_to) dateFilter.lte = new Date(date_to as string)
+      where.AND.push({ createdAt: dateFilter })
+    }
+
+    // Assigned to filter
+    if (assigned_to && assigned_to !== 'all') {
+      where.AND.push({ assignedToId: parseInt(assigned_to as string) })
+    }
+
+    // Use empty where clause if no filters (show all tickets)
+    const finalWhere = where.AND.length === 0 ? {} : where
+    
+    console.log('Search debug:', { 
+      originalQuery: req.query, 
+      whereClause: finalWhere,
+      hasFilters: where.AND.length > 0 
+    })
 
     const [tickets, total] = await Promise.all([
       prisma.ticket.findMany({
-        where: {
-          OR: [
-            { ticketId: { contains: search } },
-            { fullName: { contains: search } },
-            { problemType: { contains: search } },
-            { department: { contains: search } }
-          ]
-        },
+        where: finalWhere,
         select: {
           id: true,
           ticketId: true,
@@ -48,20 +136,11 @@ ticketRoutes.get('/search', async (req: Request, res: Response) => {
             }
           }
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         skip,
         take: limitNum
       }),
-      prisma.ticket.count({
-        where: {
-          OR: [
-            { ticketId: { contains: search } },
-            { fullName: { contains: search } },
-            { problemType: { contains: search } },
-            { department: { contains: search } }
-          ]
-        }
-      })
+      prisma.ticket.count({ where: finalWhere })
     ])
 
     res.json({
@@ -84,11 +163,12 @@ ticketRoutes.get('/search', async (req: Request, res: Response) => {
   }
 })
 
-// Get ticket by ticketId (Public endpoint - for ticket tracking)
-ticketRoutes.get('/track/:ticketId', async (req: Request, res: Response) => {
+// Get ticket by ticketId (Public endpoint - for ticket tracking) - OPTIMIZED & CACHED
+ticketRoutes.get('/track/:ticketId', cacheMiddleware(30), async (req: Request, res: Response) => {
   try {
     const { ticketId } = req.params
 
+    // Use findFirst since ticketId might not have unique constraint
     const ticket = await prisma.ticket.findFirst({
       where: { ticketId },
       select: {
@@ -112,7 +192,7 @@ ticketRoutes.get('/track/:ticketId', async (req: Request, res: Response) => {
         },
         comments: {
           where: {
-            isInternal: false  // Only show public comments
+            isInternal: false
           },
           select: {
             id: true,
@@ -124,7 +204,8 @@ ticketRoutes.get('/track/:ticketId', async (req: Request, res: Response) => {
               }
             }
           },
-          orderBy: { createdAt: 'asc' }
+          orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+          take: 50 // Limit comments for performance
         }
       }
     })
@@ -252,6 +333,9 @@ ticketRoutes.post('/', async (req: Request, res: Response) => {
 
     // Send real-time notification to all admins
     websocketService.sendToAdmins('new_notification', notification);
+    
+    // Invalidate cache
+    invalidateTicketCache();
 
     res.status(201).json({
       success: true,
@@ -280,24 +364,36 @@ ticketRoutes.post('/', async (req: Request, res: Response) => {
   }
 })
 
-// Get all tickets (Support/Admin only)
-ticketRoutes.get('/', authMiddleware, requireSupport, async (req: Request, res: Response) => {
+// Get all tickets (Support/Admin only) - OPTIMIZED & CACHED
+ticketRoutes.get('/', authMiddleware, requireSupport, cacheMiddleware(30), async (req: Request, res: Response) => {
   try {
     const { status, assignedUserId, page = '1', limit = '10' } = req.query
     
-    const pageNum = parseInt(page as string)
-    const limitNum = parseInt(limit as string)
+    const pageNum = Math.max(1, parseInt(page as string) || 1)
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 10))
     const skip = (pageNum - 1) * limitNum
 
     const where: any = {}
     
-    if (status) where.status = status
-    if (assignedUserId) where.assignedToId = parseInt(assignedUserId as string)
+    if (status && status !== 'all') where.status = status
+    if (assignedUserId && assignedUserId !== 'all') {
+      where.assignedToId = parseInt(assignedUserId as string)
+    }
 
     const [tickets, total] = await Promise.all([
       prisma.ticket.findMany({
         where,
-        include: {
+        select: {
+          id: true,
+          ticketId: true,
+          problemType: true,
+          problemDescription: true,
+          fullName: true,
+          department: true,
+          status: true,
+          priority: true,
+          createdAt: true,
+          updatedAt: true,
           assignedTo: {
             select: {
               id: true,
@@ -305,20 +401,11 @@ ticketRoutes.get('/', authMiddleware, requireSupport, async (req: Request, res: 
               fullName: true
             }
           },
-          comments: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  username: true,
-                  fullName: true
-                }
-              }
-            },
-            orderBy: { createdAt: 'desc' }
+          _count: {
+            comments: true
           }
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         skip,
         take: limitNum
       }),
@@ -445,6 +532,9 @@ ticketRoutes.put('/:id/status', authMiddleware, requireSupport, async (req: Requ
 
       // Send real-time notification to the user
       websocketService.sendToUser(ticket.assignedToId, 'new_notification', notification);
+      
+      // Invalidate cache
+      invalidateTicketCache();
     }
 
     res.json({
@@ -497,5 +587,131 @@ ticketRoutes.patch('/:id/assign', authMiddleware, requireSupport, async (req: Re
       success: false,
       error: 'เกิดข้อผิดพลาดในการมอบหมายงาน'
     })
+  }
+})
+
+// Update ticket status by ticketId (Support/Admin only)
+ticketRoutes.put('/update-status/:ticketId', authMiddleware, requireSupport, async (req: Request, res: Response) => {
+  try {
+    const { ticketId } = req.params;
+    const { status, comment, isInternal = false } = req.body;
+    const user = req.user!;
+
+    if (!status) {
+      return res.status(400).json({
+        success: false,
+        error: 'กรุณาระบุสถานะใหม่'
+      });
+    }
+
+    // Find ticket by ticketId
+    const existingTicket = await prisma.ticket.findFirst({
+      where: { ticketId },
+      include: {
+        assignedTo: true
+      }
+    });
+
+    if (!existingTicket) {
+      return res.status(404).json({
+        success: false,
+        error: 'ไม่พบข้อมูลแจ้งปัญหา'
+      });
+    }
+
+    // Update ticket status
+    const updatedTicket = await prisma.ticket.update({
+      where: { id: existingTicket.id },
+      data: { 
+        status,
+        updatedAt: new Date(),
+        resolvedAt: status === 'เสร็จสิ้น' ? new Date() : null
+      },
+      include: {
+        assignedTo: {
+          select: {
+            id: true,
+            username: true,
+            fullName: true
+          }
+        }
+      }
+    });
+
+    // Add status update comment
+    const statusComment = await prisma.ticketComment.create({
+      data: {
+        ticketId: existingTicket.id,
+        userId: user.userId,
+        comment: comment || `สถานะเปลี่ยนเป็น: ${status}`,
+        commentType: 'status_change',
+        isInternal: isInternal
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            fullName: true
+          }
+        }
+      }
+    });
+
+    // Create notification for ticket creator (if not internal)
+    if (!isInternal) {
+      const notification = await prisma.notification.create({
+        data: {
+          title: `สถานะแจ้งปัญหาอัปเดท`,
+          message: `แจ้งปัญหา ${ticketId} เปลี่ยนสถานะเป็น "${status}"`,
+          ticketId: existingTicket.id,
+          userId: user.userId // Should be admin/support user for now
+        }
+      });
+
+      // Send real-time notification
+      websocketService.sendToAdmins('new_notification', notification);
+    }
+
+    // Invalidate cache
+    invalidateTicketCache();
+
+    res.json({
+      success: true,
+      message: 'อัปเดตสถานะสำเร็จ',
+      ticket: updatedTicket,
+      comment: statusComment
+    });
+
+  } catch (error) {
+    console.error('Update ticket status error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการอัปเดตสถานะ'
+    });
+  }
+})
+
+// Get status options
+ticketRoutes.get('/status-options', async (req: Request, res: Response) => {
+  try {
+    const statusOptions = [
+      { value: 'รอดำเนินการ', label: 'รอดำเนินการ', color: 'yellow' },
+      { value: 'กำลังดำเนินการ', label: 'กำลังดำเนินการ', color: 'blue' },
+      { value: 'รอข้อมูลเพิ่มเติม', label: 'รอข้อมูลเพิ่มเติม', color: 'orange' },
+      { value: 'เสร็จสิ้น', label: 'เสร็จสิ้น', color: 'green' },
+      { value: 'ยกเลิก', label: 'ยกเลิก', color: 'red' }
+    ];
+
+    res.json({
+      success: true,
+      statusOptions
+    });
+  } catch (error) {
+    console.error('Get status options error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการดึงข้อมูลสถานะ'
+    });
   }
 })

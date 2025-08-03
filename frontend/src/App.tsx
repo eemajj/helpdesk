@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -6,12 +6,15 @@ import { AuthProvider } from './contexts/AuthContext';
 import { useLanguage } from './hooks/useLanguage';
 import Layout from './components/Layout';
 import DocumentTitle from './components/DocumentTitle';
-import HomePage from './pages/HomePage';
-import TicketFormPage from './pages/TicketFormPage';
-import TicketTrackingPage from './pages/TicketTrackingPage';
-import LoginPage from './pages/LoginPage';
-import DashboardPage from './pages/DashboardPage';
-import SearchPage from './pages/SearchPage';
+import LoadingSpinner from './components/LoadingSpinner';
+
+// Lazy load pages for better performance
+const HomePage = lazy(() => import('./pages/HomePage'));
+const TicketFormPage = lazy(() => import('./pages/TicketFormPage'));
+const TicketTrackingPage = lazy(() => import('./pages/TicketTrackingPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const SearchPage = lazy(() => import('./pages/SearchPage'));
 
 const AppContent: React.FC = () => {
   const { t } = useLanguage();
@@ -25,14 +28,16 @@ const AppContent: React.FC = () => {
         </a>
         <Layout>
           <main id="main-content">
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/submit" element={<TicketFormPage />} />
-              <Route path="/track" element={<TicketTrackingPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/search" element={<SearchPage />} />
-            </Routes>
+            <Suspense fallback={<LoadingSpinner />}>
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/submit" element={<TicketFormPage />} />
+                <Route path="/track" element={<TicketTrackingPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/search" element={<SearchPage />} />
+              </Routes>
+            </Suspense>
           </main>
         </Layout>
         <Toaster

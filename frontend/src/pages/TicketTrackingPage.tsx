@@ -1,31 +1,48 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Search, Clock, User, Phone, Building } from 'lucide-react';
+import { Search, Clock, User, Phone, Building, Edit, MessageSquare, Calendar } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useLanguage } from '../hooks/useLanguage';
+import { useAuth } from '../contexts/AuthContext';
+import StatusUpdateModal from '../components/StatusUpdateModal';
 
 interface TicketData {
-  ticket_id: string;
-  problem_type: string;
-  other_problem_type?: string;
-  problem_description: string;
-  full_name: string;
-  phone_number: string;
+  id: number;
+  ticketId: string;
+  problemType: string;
+  otherProblemType?: string;
+  problemDescription: string;
+  fullName: string;
+  phoneNumber: string;
   department: string;
   division: string;
-  asset_number?: string;
+  assetNumber?: string;
   status: string;
-  created_at: string;
-  updated_at: string;
-  assigned_to?: string;
+  priority: string;
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt?: string;
+  assignedTo?: {
+    fullName: string;
+  };
+  comments?: Array<{
+    id: number;
+    comment: string;
+    createdAt: string;
+    user: {
+      fullName: string;
+    };
+  }>;
 }
 
 const TicketTrackingPage: React.FC = () => {
   const { t, formatThaiDate } = useLanguage();
+  const { isAuthenticated, user } = useAuth();
   const [ticket, setTicket] = useState<TicketData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
 
   const { register, handleSubmit, formState: { errors } } = useForm<{ ticketId: string }>();
 
@@ -171,7 +188,7 @@ const TicketTrackingPage: React.FC = () => {
               <div className="card-body">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-0">
-                    {t('tracking.details.ticketId')} #{ticket.ticket_id}
+                    {t('tracking.details.ticketId')} #{ticket.ticketId}
                   </h2>
                   <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(ticket.status)}`}>
                     {getStatusText(ticket.status)}
@@ -181,12 +198,12 @@ const TicketTrackingPage: React.FC = () => {
                 <div className="grid sm:grid-cols-2 gap-4 text-sm">
                   <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
                     <Clock className="w-4 h-4" />
-                    <span>{t('tracking.details.reportedAt')}: {formatThaiDate(ticket.created_at)}</span>
+                    <span>{t('tracking.details.reportedAt')}: {formatThaiDate(ticket.createdAt)}</span>
                   </div>
-                  {ticket.updated_at !== ticket.created_at && (
+                  {ticket.updatedAt !== ticket.createdAt && (
                     <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
                       <Clock className="w-4 h-4" />
-                      <span>{t('tracking.details.lastUpdate')}: {formatThaiDate(ticket.updated_at)}</span>
+                      <span>{t('tracking.details.lastUpdate')}: {formatThaiDate(ticket.updatedAt)}</span>
                     </div>
                   )}
                 </div>
@@ -206,8 +223,8 @@ const TicketTrackingPage: React.FC = () => {
                     {t('tracking.details.problemType')}
                   </label>
                   <p className="text-gray-900 dark:text-white">
-                    {ticket.problem_type}
-                    {ticket.other_problem_type && ` (${ticket.other_problem_type})`}
+                    {ticket.problemType}
+                    {ticket.otherProblemType && ` (${ticket.otherProblemType})`}
                   </p>
                 </div>
                 
@@ -216,7 +233,7 @@ const TicketTrackingPage: React.FC = () => {
                     {t('tracking.details.description')}
                   </label>
                   <p className="text-gray-900 dark:text-white whitespace-pre-wrap">
-                    {ticket.problem_description}
+                    {ticket.problemDescription}
                   </p>
                 </div>
               </div>
@@ -238,7 +255,7 @@ const TicketTrackingPage: React.FC = () => {
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                           {t('tracking.details.fullName')}
                         </label>
-                        <p className="text-gray-900 dark:text-white">{ticket.full_name}</p>
+                        <p className="text-gray-900 dark:text-white">{ticket.fullName}</p>
                       </div>
                     </div>
                     
@@ -248,7 +265,7 @@ const TicketTrackingPage: React.FC = () => {
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                           {t('tracking.details.phoneNumber')}
                         </label>
-                        <p className="text-gray-900 dark:text-white">{ticket.phone_number}</p>
+                        <p className="text-gray-900 dark:text-white">{ticket.phoneNumber}</p>
                       </div>
                     </div>
                   </div>
@@ -276,18 +293,74 @@ const TicketTrackingPage: React.FC = () => {
                   </div>
                 </div>
                 
-                {ticket.asset_number && (
+                {ticket.assetNumber && (
                   <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       {t('tracking.details.assetNumber')}
                     </label>
-                    <p className="text-gray-900 dark:text-white">{ticket.asset_number}</p>
+                    <p className="text-gray-900 dark:text-white">{ticket.assetNumber}</p>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Timeline/Comments would go here in future phases */}
+            {/* Status Update Section - Admin/Support only */}
+            {isAuthenticated && user && (user.role === 'admin' || user.role === 'support') && (
+              <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                    การจัดการเคส
+                  </h3>
+                  <button
+                    onClick={() => setShowStatusModal(true)}
+                    className="inline-flex items-center px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white text-sm font-medium rounded-md transition-colors"
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    อัปเดทสถานะ
+                  </button>
+                </div>
+                
+                {/* Comments Section */}
+                {ticket.comments && ticket.comments.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="text-md font-medium text-gray-900 dark:text-white mb-3">
+                      ความคิดเห็น
+                    </h4>
+                    <div className="space-y-3">
+                      {ticket.comments.map((comment) => (
+                        <div key={comment.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                              <MessageSquare className="h-4 w-4 text-gray-500" />
+                              <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                {comment.user.fullName}
+                              </span>
+                            </div>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {formatThaiDate(comment.createdAt)}
+                            </span>
+                          </div>
+                          <p className="text-gray-700 dark:text-gray-300 text-sm">
+                            {comment.comment}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Status Update Modal */}
+            <StatusUpdateModal
+              isOpen={showStatusModal}
+              onClose={() => setShowStatusModal(false)}
+              ticketId={ticket.ticketId}
+              currentStatus={ticket.status}
+              onStatusUpdated={(newStatus) => {
+                setTicket(prev => prev ? { ...prev, status: newStatus } : null);
+              }}
+            />
           </div>
         )}
       </div>

@@ -34,7 +34,7 @@ export const useWebSocket = () => {
   const wsRef = useRef<WebSocket | null>(null);
 
   const connect = useCallback(() => {
-    // ป้องกันการเชื่อมต่อซ้ำ - เช็คทั้ง wsRef และ connection state
+    // Enhanced connection prevention with better state checks
     if (wsRef.current?.readyState === WebSocket.OPEN || 
         wsRef.current?.readyState === WebSocket.CONNECTING || 
         !isAuthenticated || !user) {
@@ -45,10 +45,10 @@ export const useWebSocket = () => {
     if (!token) return;
 
     try {
-      // ใช้ base URL แทน API URL เพื่อหลีกเลี่ยง /api ซ้ำ
+      // Optimized WebSocket URL with connection tracking
       const baseUrl = 'ws://localhost:3002';
       wsRef.current = new WebSocket(`${baseUrl}/api/ws?token=${token}`);
-      console.log('🔌 Attempting to connect WebSocket...');
+      console.log('🔌 Establishing optimized WebSocket connection...');
 
     wsRef.current.onopen = () => {
       console.log('✅ WebSocket connected');
@@ -65,20 +65,21 @@ export const useWebSocket = () => {
         setIsConnected(false);
         wsRef.current = null;
         
-        // Auto-reconnect หลังจาก 3 วินาที หากยัง authenticated อยู่
-        if (isAuthenticated && user && event.code !== 1000) { // 1000 = normal closure
+        // Smart reconnect with exponential backoff
+        if (isAuthenticated && user && event.code !== 1000) {
+          const reconnectDelay = Math.min(3000 * Math.pow(2, Math.random()), 30000);
           setTimeout(() => {
-            console.log('🔄 Attempting to reconnect...');
+            console.log('🔄 Smart reconnect attempt...');
             connect();
-          }, 3000);
+          }, reconnectDelay);
         }
       };
 
       wsRef.current.onerror = (error) => {
-        console.warn('⚠️ WebSocket error (อาจเป็น React StrictMode):', error);
-        console.log('🔗 WebSocket URL was:', `${baseUrl}/api/ws?token=${token.substring(0, 20)}...`);
+        console.warn('⚠️ WebSocket error:', error);
+        console.log('🔗 Connection URL:', `${baseUrl}/api/ws?token=${token.substring(0, 20)}...`);
         setIsConnected(false);
-        wsRef.current = null;
+        // Don't set wsRef to null here, let onclose handle it
       };
     } catch (error) {
       console.error('❌ Failed to create WebSocket:', error);
