@@ -1,0 +1,275 @@
+{
+  "site": {
+    "title": "ระบบแจ้งปัญหา DWF",
+    "subtitle": "กรมกิจการสตรีและสถาบันครอบครัว",
+    "description": "บริการแจ้งปัญหาและติดตามสถานะระบบเทคโนโลยีสารสนเทศ"
+  },
+  "navigation": {
+    "home": "หน้าหลัก",
+    "submit": "แจ้งปัญหา",
+    "track": "ติดตามสถานะ",
+    "login": "เข้าสู่ระบบ",
+    "dashboard": "แผงควบคุม",
+    "logout": "ออกจากระบบ",
+    "skipToContent": "ข้ามไปยังเนื้อหาหลัก"
+  },
+  "theme": {
+    "toggleLight": "เปลี่ยนเป็นโหมดสว่าง",
+    "toggleDark": "เปลี่ยนเป็นโหมดมืด"
+  },
+  "language": {
+    "switch": "เปลี่ยนภาษา",
+    "thai": "ไทย",
+    "english": "English"
+  },
+  "homepage": {
+    "title": "ระบบแจ้งปัญหา",
+    "subtitle": "กรมกิจการสตรีและสถาบันครอบครัว",
+    "description": "บริการแจ้งปัญหาและติดตามสถานะระบบเทคโนโลยีสารสนเทศ",
+    "submitNew": "แจ้งปัญหาใหม่",
+    "trackStatus": "ติดตามสถานะ",
+    "features": {
+      "title": "บริการของเรา",
+      "description": "ทีมงาน IT พร้อมให้บริการและแก้ไขปัญหาระบบต่าง ๆ ของท่าน",
+      "easyReport": {
+        "title": "แจ้งปัญหาง่าย",
+        "description": "กรอกแบบฟอร์มง่าย ๆ ไม่ต้องเข้าสู่ระบบ"
+      },
+      "realTimeTracking": {
+        "title": "ติดตามแบบเรียลไทม์",
+        "description": "ติดตามสถานะด้วยรหัส Ticket"
+      },
+      "professionalTeam": {
+        "title": "ทีมงานมืออาชีพ",
+        "description": "ทีมงาน IT ที่มีประสบการณ์"
+      },
+      "reportSystem": {
+        "title": "ระบบรายงาน",
+        "description": "รายงานและสถิติการแก้ไขปัญหา"
+      }
+    },
+    "problemTypes": {
+      "title": "ประเภทปัญหาที่รองรับ",
+      "description": "เราให้บริการแก้ไขปัญหาระบบ IT ครอบคลุมทุกด้าน",
+      "computer": "ปัญหาฮาร์ดแวร์ ซอฟต์แวร์ ไวรัส",
+      "internet": "ปัญหาการเชื่อมต่ออินเทอร์เน็ต เครือข่าย",
+      "printer": "ปัญหาการพิมพ์ ติดตั้งไดรเวอร์",
+      "information": "ปัญหาระบบงานต่าง ๆ ของกรม",
+      "installation": "ติดตั้งโปรแกรม อุปกรณ์ใหม่",
+      "others": "ปัญหาอื่น ๆ ที่เกี่ยวกับ IT"
+    },
+    "cta": {
+      "title": "พร้อมแจ้งปัญหาแล้วหรือยัง?",
+      "description": "ทีมงานของเราพร้อมช่วยเหลือคุณตลอด 24 ชั่วโมง",
+      "startReport": "เริ่มแจ้งปัญหา"
+    }
+  },
+  "ticketForm": {
+    "title": "แจ้งปัญหาระบบ IT",
+    "description": "กรุณากรอกข้อมูลให้ครบถ้วนเพื่อให้ทีมงานสามารถช่วยเหลือคุณได้อย่างรวดเร็ว",
+    "required": "ข้อมูลที่จำเป็น",
+    "sections": {
+      "problemInfo": "ข้อมูลปัญหา",
+      "contactInfo": "ข้อมูลติดต่อ",
+      "organizationInfo": "ข้อมูลหน่วยงาน"
+    },
+    "fields": {
+      "problemType": {
+        "label": "ประเภทปัญหา",
+        "placeholder": "เลือกประเภทปัญหา",
+        "options": {
+          "computer": "คอมพิวเตอร์",
+          "internet": "อินเทอร์เน็ต",
+          "printer": "ปริ้นเตอร์",
+          "information": "ระบบสารสนเทศ",
+          "installation": "ติดตั้ง",
+          "others": "อื่น ๆ"
+        }
+      },
+      "otherProblemType": {
+        "label": "ระบุประเภทปัญหาอื่น ๆ",
+        "placeholder": "กรุณาระบุประเภทปัญหา"
+      },
+      "problemDescription": {
+        "label": "รายละเอียดปัญหา",
+        "placeholder": "อธิบายปัญหาที่เกิดขึ้นให้ละเอียด เช่น ข้อความ Error, สิ่งที่ทำก่อนเกิดปัญหา"
+      },
+      "fullName": {
+        "label": "ชื่อ-นามสกุล",
+        "placeholder": "ชื่อ นามสกุล"
+      },
+      "phoneNumber": {
+        "label": "เบอร์โทรศัพท์",
+        "placeholder": "0812345678"
+      },
+      "department": {
+        "label": "กอง/กลุ่ม",
+        "placeholder": "เลือกกอง/กลุ่ม",
+        "options": {
+          "secretary": "สลก. (สำนักงานเลขานุการกรม)",
+          "strategy": "กยผ. (กลุ่มยุทธศาสตร์และผลผลิต)",
+          "qualityLife": "กสค. (กลุ่มส่งเสริมคุณภาพชีวิต)",
+          "development": "กสพ. (กลุ่มส่งเสริมและพัฒนา)",
+          "protection": "กคอ. (กลุ่มคุ้มครองและอาชีพ)",
+          "learningCenter": "ศจท. (ศูนย์เรียนรู้การพัฒนาสตรี)",
+          "systemDev": "กพร. (กลุ่มพัฒนาระบบราชการ)",
+          "audit": "ตสน. (ตรวจสอบภายใน)"
+        }
+      },
+      "division": {
+        "label": "กลุ่ม/ฝ่าย",
+        "placeholder": "เช่น ฝ่ายบุคคล, กลุ่มงานธุรการ"
+      },
+      "assetNumber": {
+        "label": "เลขครุภัณฑ์ (ถ้ามี)",
+        "placeholder": "เช่น DWF-IT-001"
+      }
+    },
+    "rateLimit": {
+      "title": "ข้อกำหนดการใช้งาน",
+      "description": "คุณสามารถแจ้งปัญหาได้สูงสุด 3 ครั้งต่อชั่วโมง เพื่อป้องกันการใช้งานผิดปกติ"
+    },
+    "submit": {
+      "button": "ส่งแจ้งปัญหา",
+      "loading": "กำลังส่งข้อมูล..."
+    },
+    "success": {
+      "title": "แจ้งปัญหาเรียบร้อยแล้ว!",
+      "ticketId": "รหัส Ticket ของคุณคือ",
+      "saveCode": "กรุณาเก็บรหัสนี้ไว้เพื่อติดตามสถานะ",
+      "newTicket": "แจ้งปัญหาใหม่",
+      "trackTicket": "ติดตามสถานะ"
+    },
+    "errors": {
+      "problemTypeRequired": "กรุณาเลือกประเภทปัญหา",
+      "descriptionMinLength": "รายละเอียดปัญหาต้องมีอย่างน้อย 10 ตัวอักษร",
+      "nameMinLength": "ชื่อ-นามสกุลต้องมีอย่างน้อย 2 ตัวอักษร",
+      "phoneInvalid": "เบอร์โทรศัพท์ต้องเป็นตัวเลข 9-10 หลัก",
+      "departmentRequired": "กรุณาเลือกกอง/กลุ่ม",
+      "divisionRequired": "กรุณาระบุกลุ่ม/ฝ่าย"
+    }
+  },
+  "tracking": {
+    "title": "ติดตามสถานะ Ticket",
+    "description": "กรอกรหัส Ticket เพื่อตรวจสอบสถานะการแก้ไขปัญหา",
+    "search": {
+      "label": "รหัส Ticket",
+      "placeholder": "กรอกรหัส Ticket (เช่น TK1234567890)",
+      "button": "ค้นหา",
+      "loading": "ค้นหา..."
+    },
+    "notFound": {
+      "title": "ไม่พบ Ticket ที่ระบุ",
+      "description": "กรุณาตรวจสอบรหัส Ticket และลองค้นหาใหม่อีกครั้ง"
+    },
+    "status": {
+      "pending": "รอดำเนินการ",
+      "inProgress": "กำลังดำเนินการ",
+      "waitingInfo": "รอข้อมูลเพิ่มเติม",
+      "completed": "เสร็จสิ้น",
+      "cancelled": "ยกเลิก"
+    },
+    "details": {
+      "ticketId": "รหัส Ticket",
+      "reportedAt": "แจ้งเมื่อ",
+      "lastUpdate": "อัปเดตล่าสุด",
+      "problemDetails": "รายละเอียดปัญหา",
+      "problemType": "ประเภทปัญหา",
+      "description": "รายละเอียดปัญหา",
+      "reporterInfo": "ข้อมูลผู้แจ้ง",
+      "fullName": "ชื่อ-นามสกุล",
+      "phoneNumber": "เบอร์โทรศัพท์",
+      "department": "กอง/กลุ่ม",
+      "division": "กลุ่ม/ฝ่าย",
+      "assetNumber": "เลขครุภัณฑ์"
+    },
+    "errors": {
+      "ticketIdRequired": "กรุณากรอกรหัส Ticket",
+      "invalidFormat": "รูปแบบรหัส Ticket ไม่ถูกต้อง (เช่น TK1234567890)",
+      "searchError": "เกิดข้อผิดพลาดในการค้นหา Ticket"
+    }
+  },
+  "login": {
+    "title": "เข้าสู่ระบบ",
+    "description": "สำหรับเจ้าหน้าที่และผู้ดูแลระบบ",
+    "fields": {
+      "username": {
+        "label": "ชื่อผู้ใช้",
+        "placeholder": "ชื่อผู้ใช้"
+      },
+      "password": {
+        "label": "รหัสผ่าน",
+        "placeholder": "รหัสผ่าน"
+      }
+    },
+    "button": {
+      "login": "เข้าสู่ระบบ",
+      "loading": "กำลังเข้าสู่ระบบ..."
+    },
+    "showPassword": "แสดงรหัสผ่าน",
+    "hidePassword": "ซ่อนรหัสผ่าน",
+    "forgotPassword": "หากลืมรหัสผ่าน กรุณาติดต่อผู้ดูแลระบบ",
+    "errors": {
+      "usernameRequired": "กรุณากรอกชื่อผู้ใช้",
+      "passwordRequired": "กรุณากรอกรหัสผ่าน",
+      "loginFailed": "เข้าสู่ระบบไม่สำเร็จ"
+    }
+  },
+  "dashboard": {
+    "title": "แผงควบคุม",
+    "welcome": "ยินดีต้อนรับ",
+    "stats": {
+      "totalTickets": "Ticket ทั้งหมด",
+      "pending": "รอดำเนินการ",
+      "inProgress": "กำลังดำเนินการ",
+      "completed": "เสร็จสิ้น"
+    },
+    "upcomingFeatures": {
+      "title": "ฟีเจอร์ที่จะมาในเฟสต่อไป",
+      "support": {
+        "title": "สำหรับเจ้าหน้าที่ Support",
+        "viewAssigned": "ดูรายการ Ticket ที่ได้รับมอบหมาย",
+        "changeStatus": "เปลี่ยนสถานะ Ticket",
+        "addComments": "เพิ่มความคิดเห็น/อัปเดต",
+        "notifications": "ระบบแจ้งเตือน"
+      },
+      "admin": {
+        "title": "สำหรับผู้ดูแลระบบ",
+        "manageUsers": "จัดการผู้ใช้งาน",
+        "assignTickets": "มอบหมาย Ticket",
+        "configureSLA": "ตั้งค่า SLA",
+        "reports": "รายงานและสถิติ",
+        "exportPDF": "ส่งออกข้อมูล PDF"
+      }
+    }
+  },
+  "common": {
+    "loading": "กำลังโหลด...",
+    "error": "เกิดข้อผิดพลาด",
+    "success": "สำเร็จ",
+    "cancel": "ยกเลิก",
+    "save": "บันทึก",
+    "edit": "แก้ไข",
+    "delete": "ลบ",
+    "back": "กลับ",
+    "next": "ถัดไป",
+    "previous": "ก่อนหน้า",
+    "close": "ปิด",
+    "search": "ค้นหา",
+    "filter": "กรอง",
+    "export": "ส่งออก",
+    "import": "นำเข้า",
+    "refresh": "รีเฟรช"
+  },
+  "footer": {
+    "copyright": "© 2025 กรมกิจการสตรีและสถาบันครอบครัว - ระบบแจ้งปัญหา"
+  },
+  "messages": {
+    "ticketSubmitted": "แจ้งปัญหาเรียบร้อยแล้ว!",
+    "loginSuccess": "เข้าสู่ระบบสำเร็จ",
+    "logoutSuccess": "ออกจากระบบสำเร็จ",
+    "rateLimitExceeded": "คุณได้แจ้งปัญหาเกินกำหนด (3 ครั้ง/ชั่วโมง) กรุณาลองใหม่ในภายหลัง",
+    "submitError": "เกิดข้อผิดพลาดในการแจ้งปัญหา กรุณาลองใหม่อีกครั้ง",
+    "networkError": "เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาตรวจสอบอินเทอร์เน็ต"
+  }
+}

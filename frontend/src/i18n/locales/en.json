@@ -1,0 +1,275 @@
+{
+  "site": {
+    "title": "DWF Helpdesk System",
+    "subtitle": "Department of Women's Affairs and Family Development",
+    "description": "IT Problem Reporting and Status Tracking Service"
+  },
+  "navigation": {
+    "home": "Home",
+    "submit": "Report Issue",
+    "track": "Track Status",
+    "login": "Login",
+    "dashboard": "Dashboard",
+    "logout": "Logout",
+    "skipToContent": "Skip to main content"
+  },
+  "theme": {
+    "toggleLight": "Switch to light mode",
+    "toggleDark": "Switch to dark mode"
+  },
+  "language": {
+    "switch": "Switch Language",
+    "thai": "ภาษาไทย",
+    "english": "English"
+  },
+  "homepage": {
+    "title": "Helpdesk System",
+    "subtitle": "Department of Women's Affairs and Family Development",
+    "description": "IT Problem Reporting and Status Tracking Service",
+    "submitNew": "Report New Issue",
+    "trackStatus": "Track Status",
+    "features": {
+      "title": "Our Services",
+      "description": "Our IT team is ready to provide service and resolve your system issues",
+      "easyReport": {
+        "title": "Easy Reporting",
+        "description": "Simple form filling without login required"
+      },
+      "realTimeTracking": {
+        "title": "Real-time Tracking",
+        "description": "Track status with ticket ID"
+      },
+      "professionalTeam": {
+        "title": "Professional Team",
+        "description": "Experienced IT support team"
+      },
+      "reportSystem": {
+        "title": "Reporting System",
+        "description": "Reports and statistics for issue resolution"
+      }
+    },
+    "problemTypes": {
+      "title": "Supported Problem Types",
+      "description": "We provide comprehensive IT system support services",
+      "computer": "Hardware, software, and virus issues",
+      "internet": "Internet connection and network problems",
+      "printer": "Printing issues and driver installation",
+      "information": "Department information system problems",
+      "installation": "Software and equipment installation",
+      "others": "Other IT-related issues"
+    },
+    "cta": {
+      "title": "Ready to Report an Issue?",
+      "description": "Our team is ready to assist you 24/7",
+      "startReport": "Start Reporting"
+    }
+  },
+  "ticketForm": {
+    "title": "Report IT Issue",
+    "description": "Please fill in all required information so our team can assist you quickly",
+    "required": "Required field",
+    "sections": {
+      "problemInfo": "Problem Information",
+      "contactInfo": "Contact Information",
+      "organizationInfo": "Organization Information"
+    },
+    "fields": {
+      "problemType": {
+        "label": "Problem Type",
+        "placeholder": "Select problem type",
+        "options": {
+          "computer": "Computer",
+          "internet": "Internet",
+          "printer": "Printer",
+          "information": "Information System",
+          "installation": "Installation",
+          "others": "Others"
+        }
+      },
+      "otherProblemType": {
+        "label": "Specify Other Problem Type",
+        "placeholder": "Please specify the problem type"
+      },
+      "problemDescription": {
+        "label": "Problem Description",
+        "placeholder": "Describe the problem in detail, e.g., error messages, what you were doing before the problem occurred"
+      },
+      "fullName": {
+        "label": "Full Name",
+        "placeholder": "First Name Last Name"
+      },
+      "phoneNumber": {
+        "label": "Phone Number",
+        "placeholder": "0812345678"
+      },
+      "department": {
+        "label": "Department/Division",
+        "placeholder": "Select department/division",
+        "options": {
+          "secretary": "SOD (Secretary Office Department)",
+          "strategy": "SPD (Strategy and Product Division)",
+          "qualityLife": "QLD (Quality of Life Division)",
+          "development": "DVD (Development Division)",
+          "protection": "POD (Protection and Occupation Division)",
+          "learningCenter": "WDC (Women Development Center)",
+          "systemDev": "SDD (System Development Division)",
+          "audit": "IAD (Internal Audit Division)"
+        }
+      },
+      "division": {
+        "label": "Section/Unit",
+        "placeholder": "e.g., Personnel Section, Administrative Unit"
+      },
+      "assetNumber": {
+        "label": "Asset Number (if any)",
+        "placeholder": "e.g., DWF-IT-001"
+      }
+    },
+    "rateLimit": {
+      "title": "Usage Policy",
+      "description": "You can report up to 3 issues per hour to prevent system abuse"
+    },
+    "submit": {
+      "button": "Submit Report",
+      "loading": "Submitting..."
+    },
+    "success": {
+      "title": "Issue Reported Successfully!",
+      "ticketId": "Your ticket ID is",
+      "saveCode": "Please save this code to track status",
+      "newTicket": "Report New Issue",
+      "trackTicket": "Track Status"
+    },
+    "errors": {
+      "problemTypeRequired": "Please select a problem type",
+      "descriptionMinLength": "Problem description must be at least 10 characters",
+      "nameMinLength": "Full name must be at least 2 characters",
+      "phoneInvalid": "Phone number must be 9-10 digits",
+      "departmentRequired": "Please select department/division",
+      "divisionRequired": "Please specify section/unit"
+    }
+  },
+  "tracking": {
+    "title": "Track Ticket Status",
+    "description": "Enter ticket ID to check issue resolution status",
+    "search": {
+      "label": "Ticket ID",
+      "placeholder": "Enter ticket ID (e.g., TK1234567890)",
+      "button": "Search",
+      "loading": "Searching..."
+    },
+    "notFound": {
+      "title": "Ticket Not Found",
+      "description": "Please check the ticket ID and try searching again"
+    },
+    "status": {
+      "pending": "Pending",
+      "inProgress": "In Progress",
+      "waitingInfo": "Waiting for Information",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "details": {
+      "ticketId": "Ticket ID",
+      "reportedAt": "Reported at",
+      "lastUpdate": "Last updated",
+      "problemDetails": "Problem Details",
+      "problemType": "Problem Type",
+      "description": "Problem Description",
+      "reporterInfo": "Reporter Information",
+      "fullName": "Full Name",
+      "phoneNumber": "Phone Number",
+      "department": "Department/Division",
+      "division": "Section/Unit",
+      "assetNumber": "Asset Number"
+    },
+    "errors": {
+      "ticketIdRequired": "Please enter ticket ID",
+      "invalidFormat": "Invalid ticket ID format (e.g., TK1234567890)",
+      "searchError": "Error occurred while searching for ticket"
+    }
+  },
+  "login": {
+    "title": "Login",
+    "description": "For staff and system administrators",
+    "fields": {
+      "username": {
+        "label": "Username",
+        "placeholder": "Username"
+      },
+      "password": {
+        "label": "Password",
+        "placeholder": "Password"
+      }
+    },
+    "button": {
+      "login": "Login",
+      "loading": "Logging in..."
+    },
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "forgotPassword": "If you forgot your password, please contact the system administrator",
+    "errors": {
+      "usernameRequired": "Please enter username",
+      "passwordRequired": "Please enter password",
+      "loginFailed": "Login failed"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome",
+    "stats": {
+      "totalTickets": "Total Tickets",
+      "pending": "Pending",
+      "inProgress": "In Progress",
+      "completed": "Completed"
+    },
+    "upcomingFeatures": {
+      "title": "Upcoming Features",
+      "support": {
+        "title": "For Support Staff",
+        "viewAssigned": "View assigned tickets",
+        "changeStatus": "Change ticket status",
+        "addComments": "Add comments/updates",
+        "notifications": "Notification system"
+      },
+      "admin": {
+        "title": "For Administrators",
+        "manageUsers": "User management",
+        "assignTickets": "Assign tickets",
+        "configureSLA": "Configure SLA",
+        "reports": "Reports and analytics",
+        "exportPDF": "Export PDF data"
+      }
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error occurred",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "close": "Close",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "import": "Import",
+    "refresh": "Refresh"
+  },
+  "footer": {
+    "copyright": "© 2025 Department of Women's Affairs and Family Development - Helpdesk System"
+  },
+  "messages": {
+    "ticketSubmitted": "Issue reported successfully!",
+    "loginSuccess": "Login successful",
+    "logoutSuccess": "Logout successful",
+    "rateLimitExceeded": "You have exceeded the reporting limit (3 times/hour). Please try again later",
+    "submitError": "Error occurred while reporting issue. Please try again",
+    "networkError": "Connection error occurred. Please check your internet connection"
+  }
+}
