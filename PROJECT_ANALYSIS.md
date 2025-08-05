@@ -89,6 +89,13 @@
         *   **ความยาวของข้อความและ CSS Styling (Navbar):** ข้อความภาษาอังกฤษสำหรับเมนูบน Navbar มีความยาวมากกว่าข้อความภาษาไทย ทำให้ข้อความเกินพื้นที่ที่กำหนดไว้และถูกขึ้นบรรทัดใหม่ ซึ่งอาจเกิดจาก `width` ที่ถูกกำหนดตายตัว หรือไม่ได้ใช้ `white-space: nowrap;` หรือการจัดเรียงด้วย Flexbox/Grid ที่ไม่ยืดหยุ่นพอ
         *   **ผลกระทบ:** ทำให้ UI ไม่สอดคล้องกับภาษาที่เลือก และลดความสวยงามของ Navbar เมื่อใช้ภาษาอังกฤษ
 
+5.  **TypeScript Compilation Errors ใน `SearchPage.tsx`:**
+    *   **อาการ:** เมื่อเข้าหน้า `localhost:3000` พบ Error ใน Console และ Terminal ที่ชี้ไปที่ `src/pages/SearchPage.tsx` โดยมีข้อความ `TS2551: Property 'ticket_id' does not exist on type 'Ticket'. Did you mean 'ticketId'?` และ `TS2339: Property 'current' does not exist on type '{ page: number; limit: number; total: number; totalPages: number; }'.`
+    *   **ข้อสรุปที่เป็นไปได้:**
+        *   **ความไม่สอดคล้องกันของชื่อ Property:** ในโค้ดมีการใช้ชื่อ Property แบบ snake_case (เช่น `ticket_id`, `full_name`, `problem_type`) ในขณะที่ Interface `Ticket` กำหนดไว้เป็น camelCase (เช่น `ticketId`, `fullName`, `problemType`)
+        *   **ความไม่สอดคล้องกันของ Type Definition:** Object `pagination` ที่ใช้ใน `SearchPage.tsx` ไม่มี Property ชื่อ `current` และ `count` ตามที่โค้ดพยายามเข้าถึง ซึ่งอาจเกิดจาก Type Definition ไม่ตรงกับข้อมูลที่ได้รับจาก Backend API
+        *   **ผลกระทบ:** โปรเจกต์ไม่สามารถคอมไพล์ได้ ทำให้หน้า Search Page ไม่สามารถแสดงผลได้อย่างถูกต้อง
+
 ### **ส่วนที่ควรพัฒนาเพิ่มเติม (Roadmap):**
 
 1.  **ปรับแต่ง UI: แทนที่ข้อความชื่อระบบด้วยโลโก้หน่วยงาน:**

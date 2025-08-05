@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import axios from 'axios';
 import { Send, AlertCircle, CheckCircle } from 'lucide-react';
 import { useLanguage } from '../hooks/useLanguage';
-import FileUpload from '../components/FileUpload';
+// import FileUpload from '../components/FileUpload';
 
 const ProblemType = z.enum([
   'คอมพิวเตอร์',
@@ -41,20 +41,20 @@ const ticketSchema = z.object({
 
 type TicketFormData = z.infer<typeof ticketSchema>;
 
-interface UploadedFile {
-  filename: string;
-  originalname: string;
-  mimetype: string;
-  size: number;
-  url: string;
-}
+// interface UploadedFile {
+//   filename: string;
+//   originalname: string;
+//   mimetype: string;
+//   size: number;
+//   url: string;
+// }
 
 const TicketFormPage: React.FC = () => {
   const { t } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [ticketId, setTicketId] = useState<string>('');
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  // const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
 
   const {
     register,
@@ -68,36 +68,36 @@ const TicketFormPage: React.FC = () => {
 
   const watchProblemType = watch('problemType');
 
-  const handleFilesUploaded = (files: UploadedFile[]) => {
-    setUploadedFiles(files);
-  };
+  // const handleFilesUploaded = (files: UploadedFile[]) => {
+  //   setUploadedFiles(files);
+  // };
 
 
   const onSubmit = async (data: TicketFormData) => {
     setIsSubmitting(true);
     try {
-      const response = await axios.post('/api/tickets', data);
+      const response = await axios.post('/tickets', data);
       
       if (response.data.success) {
         const newTicketId = response.data.ticketId;
         
-        // แนบไฟล์กับ ticket ถ้ามี
-        if (uploadedFiles.length > 0) {
+        // แนบไฟล์กับ ticket ถ้ามี (ปิดใช้งานชั่วคราว)
+        /* if (uploadedFiles.length > 0) {
           try {
-            await axios.post(`/api/files/attach/${newTicketId}`, {
+            await axios.post(`/files/attach/${newTicketId}`, {
               files: uploadedFiles
             });
           } catch (attachError) {
             console.error('File attach error:', attachError);
             toast.error('เกิดข้อผิดพลาดในการแนบไฟล์ แต่ Ticket ถูกสร้างสำเร็จแล้ว');
           }
-        }
+        } */
         
         setTicketId(newTicketId);
         setSubmitSuccess(true);
         toast.success(t('messages.ticketSubmitted'));
         reset();
-        setUploadedFiles([]);
+        // setUploadedFiles([]);
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || t('messages.submitError');
@@ -110,7 +110,7 @@ const TicketFormPage: React.FC = () => {
   const handleNewTicket = () => {
     setSubmitSuccess(false);
     setTicketId('');
-    setUploadedFiles([]);
+    // setUploadedFiles([]);
   };
 
   if (submitSuccess) {
@@ -237,8 +237,8 @@ const TicketFormPage: React.FC = () => {
                 )}
               </div>
 
-              {/* File Upload Section */}
-              <div>
+              {/* File Upload Section - Temporarily disabled */}
+              {/* <div>
                 <label className="form-label">
                   แนบไฟล์รูปภาพประกอบ (ถ้ามี)
                 </label>
@@ -249,7 +249,7 @@ const TicketFormPage: React.FC = () => {
                   acceptedTypes={['image/*', '.pdf', '.doc', '.docx', '.txt']}
                   disabled={isSubmitting}
                 />
-              </div>
+              </div> */}
             </div>
           </div>
 

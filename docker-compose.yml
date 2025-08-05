@@ -7,10 +7,11 @@ services:
       - "3002:3002"
     environment:
       - DATABASE_URL=postgresql://postgres:password@db:5432/dwf_helpdesk
-      - JWT_SECRET=dwf-helpdesk-super-secret-jwt-key-2024-very-secure
-      - JWT_REFRESH_SECRET=dwf-helpdesk-refresh-token-secret-key-2024-very-secure
+      - JWT_SECRET=${JWT_SECRET:-dwf-helpdesk-super-secret-jwt-key-2024-very-secure}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-dwf-helpdesk-refresh-token-secret-key-2024-very-secure}
       - PORT=3002
       - NODE_ENV=development
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:3000}
     depends_on:
       - db
 
@@ -20,18 +21,18 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - REACT_APP_API_URL=http://localhost:3002/api
+      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:3002/api}
     volumes:
-      - ./frontend:/app
+      - ./backend:/app
       - /app/node_modules
     command: sh -c "npm ci && npm start"
 
   db:
     image: postgres:15-alpine
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=dwf_helpdesk
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
+      - POSTGRES_DB=${POSTGRES_DB:-dwf_helpdesk}
     ports:
       - "5433:5432"
     volumes:

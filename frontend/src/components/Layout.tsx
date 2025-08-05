@@ -86,7 +86,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   }`}
                 >
                   <Search className="w-4 h-4" />
-                  <span>ค้นหาขั้นสูง</span>
+                  <span>{t('navigation.search')}</span>
+                </Link>
+              )}
+
+              {user && user.role === 'ADMIN' && (
+                <Link
+                  to="/admin/dashboard"
+                  className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/admin/dashboard') 
+                      ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20' 
+                      : 'text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400'
+                  }`}
+                >
+                  <span>Admin</span>
                 </Link>
               )}
             </nav>

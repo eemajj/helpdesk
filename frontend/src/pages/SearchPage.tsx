@@ -47,35 +47,35 @@ interface Ticket {
 }
 
 const SearchPage: React.FC = () => {
-  const { user, isAuthenticated, logout } = useAuth();
-  const { t } = useLanguage();
+  const { isAuthenticated, logout } = useAuth();
+  // const { t } = useLanguage(); // TODO: Use for translations
   const { lastTicketUpdate } = useWebSocket();
   
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
   const [currentFilters, setCurrentFilters] = useState<SearchFilters | null>(null);
-  const [searchKeyword, setSearchKeyword] = useState('');
+  const [searchKeyword] = useState(''); // TODO: Implement search functionality
   
   // Debounce search input
   const debouncedSearchKeyword = useDebounce(searchKeyword, 300);
   
-  // Virtualization for large lists
-  const { visibleItems, handleScroll, totalHeight } = useVirtualization(tickets, {
-    itemHeight: 80,
-    containerHeight: 600,
-    overscan: 5
-  });
+  // TODO: Implement virtualization for large lists
+  // const { visibleItems, handleScroll, totalHeight } = useVirtualization(tickets, {
+  //   itemHeight: 80,
+  //   containerHeight: 600,
+  //   overscan: 5
+  // });
   
-  // Memoized filtered tickets for performance
-  const filteredTickets = useMemo(() => {
-    if (!debouncedSearchKeyword) return tickets;
-    return tickets.filter(ticket => 
-      ticket.ticket_id.toLowerCase().includes(debouncedSearchKeyword.toLowerCase()) ||
-      ticket.full_name.toLowerCase().includes(debouncedSearchKeyword.toLowerCase()) ||
-      ticket.problem_type.toLowerCase().includes(debouncedSearchKeyword.toLowerCase())
-    );
-  }, [tickets, debouncedSearchKeyword]);
+  // TODO: Implement filtered tickets for performance
+  // const filteredTickets = useMemo(() => {
+  //   if (!debouncedSearchKeyword) return tickets;
+  //   return tickets.filter(ticket => 
+  //     ticket.ticketId.toLowerCase().includes(debouncedSearchKeyword.toLowerCase()) ||
+  //     ticket.fullName.toLowerCase().includes(debouncedSearchKeyword.toLowerCase()) ||
+  //     ticket.problemType.toLowerCase().includes(debouncedSearchKeyword.toLowerCase())
+  //   );
+  // }, [tickets, debouncedSearchKeyword]);
 
   const api = axios.create({
     baseURL: process.env.REACT_APP_API_URL,
@@ -289,7 +289,7 @@ const SearchPage: React.FC = () => {
                 </h2>
                 {pagination.total > 0 && (
                   <span className="text-sm text-gray-600 dark:text-gray-400">
-                    แสดง {((pagination.current - 1) * pagination.limit) + 1}-{Math.min(pagination.current * pagination.limit, pagination.count)} จาก {pagination.count.toLocaleString()} รายการ
+                    แสดง {((pagination.page - 1) * pagination.limit) + 1}-{Math.min(pagination.page * pagination.limit, pagination.total)} จาก {pagination.total.toLocaleString()} รายการ
                   </span>
                 )}
               </div>
@@ -396,26 +396,26 @@ const SearchPage: React.FC = () => {
             )}
 
             {/* Pagination */}
-            {pagination.total > 1 && (
+            {pagination.totalPages > 1 && (
               <div className="flex items-center justify-center space-x-2 pt-6">
                 <button
-                  onClick={() => handlePageChange(pagination.current - 1)}
-                  disabled={pagination.current <= 1}
+                  onClick={() => handlePageChange(pagination.page - 1)}
+                  disabled={pagination.page <= 1}
                   className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   ก่อนหน้า
                 </button>
                 
-                {Array.from({ length: Math.min(5, pagination.total) }, (_, i) => {
+                {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
                   let pageNum: number;
-                  if (pagination.total <= 5) {
+                  if (pagination.totalPages <= 5) {
                     pageNum = i + 1;
-                  } else if (pagination.current <= 3) {
+                  } else if (pagination.page <= 3) {
                     pageNum = i + 1;
-                  } else if (pagination.current >= pagination.total - 2) {
-                    pageNum = pagination.total - 4 + i;
+                  } else if (pagination.page >= pagination.totalPages - 2) {
+                    pageNum = pagination.totalPages - 4 + i;
                   } else {
-                    pageNum = pagination.current - 2 + i;
+                    pageNum = pagination.page - 2 + i;
                   }
                   
                   return (
@@ -423,7 +423,7 @@ const SearchPage: React.FC = () => {
                       key={pageNum}
                       onClick={() => handlePageChange(pageNum)}
                       className={`px-3 py-2 text-sm rounded-lg transition-colors ${
-                        pageNum === pagination.current
+                        pageNum === pagination.page
                           ? 'bg-primary-600 text-white'
                           : 'border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
                       }`}
@@ -434,8 +434,8 @@ const SearchPage: React.FC = () => {
                 })}
                 
                 <button
-                  onClick={() => handlePageChange(pagination.current + 1)}
-                  disabled={pagination.current >= pagination.total}
+                  onClick={() => handlePageChange(pagination.page + 1)}
+                  disabled={pagination.page >= pagination.totalPages}
                   className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   ถัดไป

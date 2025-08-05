@@ -6,10 +6,12 @@ interface User {
   username: string;
   fullName: string;
   role: string;
+  email?: string;
 }
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   loading: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
@@ -32,37 +34,59 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    // Set axios default base URL
+    // Remove baseURL to use proxy
+    delete axios.defaults.baseURL;
+    
+    console.log('🔧 AuthContext Setup: Using proxy to backend');
+    
+    const storedToken = localStorage.getItem('accessToken');
+    if (storedToken) {
+      setToken(storedToken);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
     }
     setLoading(false);
   }, []);
 
   const login = async (username: string, password: string) => {
     try {
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/login`, {
+      console.log('🚀 Login attempt:', {
+        username,
+        url: '/api/auth/login'
+      });
+      
+      const response = await axios.post('/api/auth/login', {
         username,
         password
       });
 
+      console.log('✅ Login response:', response.data);
+
       const { user: userData, accessToken, refreshToken } = response.data;
       
       setUser(userData);
+      setToken(accessToken);
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
       
       axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
     } catch (error: any) {
+      console.error('❌ Login error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
       throw new Error(error.response?.data?.error || 'Login failed');
     }
   };
 
   const logout = () => {
     setUser(null);
+    setToken(null);
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     delete axios.defaults.headers.common['Authorization'];
@@ -70,6 +94,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const value = {
     user,
+    token,
     loading,
     login,
     logout,

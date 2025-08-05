@@ -90,7 +90,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
         formData.append('files', file)
       })
 
-      const response = await axios.post('/api/files/upload-temp', formData, {
+      const response = await axios.post('/files/upload-temp', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         },
