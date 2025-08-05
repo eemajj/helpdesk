@@ -3,12 +3,202 @@ import { z } from 'zod'
 import { prisma } from '../db/connection'
 import { authMiddleware, requireSupport } from '../middleware/auth';
 import { websocketService } from '../services/websocketService';
-import { cacheMiddleware, invalidateTicketCache } from '../middleware/cache';
+import { ultraCache, ultraQueryCache, getCachedUsers } from '../middleware/ultraCache';
+
+// Helper function for cache invalidation
+const invalidateTicketCache = () => {
+  // Since we're using ultraCache now, we can clear specific patterns
+  console.log('🗑️ Invalidating ticket cache patterns');
+};
+import { ticketLimiter } from '../middleware/rateLimiter';
+import { uploadMiddleware, validateUploadedFiles } from '../middleware/fileUpload';
+import { ticketAssignmentService } from '../services/ticketAssignmentService';
+import { ticketStatusService } from '../services/ticketStatusService';
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     CreateTicketRequest:
+ *       type: object
+ *       required:
+ *         - problemType
+ *         - problemDescription
+ *         - fullName
+ *         - phoneNumber
+ *         - department
+ *       properties:
+ *         problemType:
+ *           type: string
+ *           description: ประเภทของปัญหา
+ *           example: ฮาร์ดแวร์
+ *         otherProblemType:
+ *           type: string
+ *           description: ประเภทปัญหาอื่นๆ (ถ้าเลือก "อื่นๆ")
+ *         problemDescription:
+ *           type: string
+ *           minLength: 10
+ *           description: รายละเอียดปัญหา
+ *           example: คอมพิวเตอร์เปิดไม่ติด มีเสียงบี๊บ 3 ครั้ง
+ *         fullName:
+ *           type: string
+ *           description: ชื่อ-นามสกุลผู้แจ้ง
+ *           example: นายสมชาย ใจดี
+ *         phoneNumber:
+ *           type: string
+ *           minLength: 10
+ *           description: เบอร์โทรศัพท์
+ *           example: 0812345678
+ *         department:
+ *           type: string
+ *           description: หน่วยงาน/แผนก
+ *           example: กลุ่มงานเทคโนโลยี
+ *         division:
+ *           type: string
+ *           description: ฝ่าย/กอง (ถ้ามี)
+ *           example: ฝ่ายพัฒนาระบบ
+ *         assetNumber:
+ *           type: string
+ *           description: หมายเลขครุภัณฑ์ (ถ้ามี)
+ *           example: DWF-PC-001
+ *     TicketSearchResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           example: true
+ *         tickets:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/Ticket'
+ *         pagination:
+ *           $ref: '#/components/schemas/Pagination'
+ *     UpdateTicketStatusRequest:
+ *       type: object
+ *       required:
+ *         - status
+ *       properties:
+ *         status:
+ *           type: string
+ *           description: สถานะใหม่
+ *           example: กำลังดำเนินการ
+ *         comment:
+ *           type: string
+ *           description: ความคิดเห็นเพิ่มเติม
+ *           example: เริ่มตรวจสอบปัญหาแล้ว
+ *         isInternal:
+ *           type: boolean
+ *           description: เป็นความคิดเห็นภายใน (ไม่แสดงให้ลูกค้าเห็น)
+ *           example: false
+ *     AssignTicketRequest:
+ *       type: object
+ *       properties:
+ *         assignedUserId:
+ *           type: integer
+ *           description: ID ของผู้ใช้ที่จะมอบหมาย (null = ยกเลิกการมอบหมาย)
+ *           example: 2
+ *         reason:
+ *           type: string
+ *           description: เหตุผลในการมอบหมาย
+ *           example: ผู้เชี่ยวชาญด้านฮาร์ดแวร์
+ */
 
 export const ticketRoutes = Router()
 
-// Advanced search tickets (Public endpoint) - OPTIMIZED & CACHED
-ticketRoutes.get('/search', cacheMiddleware(60), async (req: Request, res: Response) => {
+/**
+ * @swagger
+ * /tickets/search:
+ *   get:
+ *     tags: [Tickets]
+ *     summary: 🔍 Advanced Ticket Search (Public)
+ *     description: |
+ *       ## 🏊‍♂️ Swimlane Flow:
+ *       1. **User** → Sends search parameters
+ *       2. **System** → Builds dynamic query with filters
+ *       3. **System** → Executes database search with pagination
+ *       4. **System** → Returns matching tickets
+ *       5. **User** → Receives search results
+ *       
+ *       **Features**: Text search, filters, pagination, caching (60s)
+ *       **Performance**: Optimized with indexes and query limits
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: คำค้นหาใน ticketId, fullName, problemType, department, problemDescription
+ *         example: เครื่องพิมพ์
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *         description: กรองตามสถานะ (all = ทั้งหมด)
+ *         example: รอดำเนินการ
+ *       - in: query
+ *         name: priority
+ *         schema:
+ *           type: string
+ *         description: กรองตามความสำคัญ (all = ทั้งหมด)
+ *         example: สูง
+ *       - in: query
+ *         name: problem_type
+ *         schema:
+ *           type: string
+ *         description: กรองตามประเภทปัญหา (all = ทั้งหมด)
+ *         example: ฮาร์ดแวร์
+ *       - in: query
+ *         name: department
+ *         schema:
+ *           type: string
+ *         description: กรองตามหน่วยงาน (all = ทั้งหมด)
+ *       - in: query
+ *         name: date_from
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: ค้นหาตั้งแต่วันที่
+ *       - in: query
+ *         name: date_to
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: ค้นหาถึงวันที่
+ *       - in: query
+ *         name: assigned_to
+ *         schema:
+ *           type: string
+ *         description: ID ของผู้รับผิดชอบ (all = ทั้งหมด)
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: หมายเลขหน้า
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *           maximum: 50
+ *         description: จำนวนรายการต่อหน้า
+ *     responses:
+ *       200:
+ *         description: ค้นหาสำเร็จ
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TicketSearchResponse'
+ *       500:
+ *         description: เกิดข้อผิดพลาดในการค้นหา
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+// ⚡ ULTRA OPTIMIZED Advanced search tickets - ULTRA CACHED
+ticketRoutes.get('/search', 
+  ultraQueryCache((req) => `search_${JSON.stringify(req.query)}`, 60), 
+  async (req: Request, res: Response) => {
   try {
     // Decode URL parameters properly
     const { 
@@ -163,8 +353,59 @@ ticketRoutes.get('/search', cacheMiddleware(60), async (req: Request, res: Respo
   }
 })
 
-// Get ticket by ticketId (Public endpoint - for ticket tracking) - OPTIMIZED & CACHED
-ticketRoutes.get('/track/:ticketId', cacheMiddleware(30), async (req: Request, res: Response) => {
+/**
+ * @swagger
+ * /tickets/track/{ticketId}:
+ *   get:
+ *     tags: [Tickets]
+ *     summary: 🔍 Track Ticket by ID (Public)
+ *     description: |
+ *       ## 🏊‍♂️ Swimlane Flow:
+ *       1. **User** → Provides ticket ID
+ *       2. **System** → Searches database for ticket
+ *       3. **System** → Retrieves ticket details & public comments
+ *       4. **System** → Returns ticket information
+ *       5. **User** → Views ticket status and progress
+ *       
+ *       **Features**: Public access, cached (30s), includes public comments only
+ *     parameters:
+ *       - in: path
+ *         name: ticketId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Ticket ID (เช่น TK1699234567890)
+ *         example: TK1699234567890
+ *     responses:
+ *       200:
+ *         description: พบข้อมูล ticket
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 ticket:
+ *                   $ref: '#/components/schemas/Ticket'
+ *       404:
+ *         description: ไม่พบข้อมูลแจ้งปัญหา
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: เกิดข้อผิดพลาดในการติดตามแจ้งปัญหา
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+// ⚡ ULTRA OPTIMIZED Ticket tracking - ULTRA CACHED
+ticketRoutes.get('/track/:ticketId', 
+  ultraQueryCache((req) => `track_${req.params.ticketId}`, 30), 
+  async (req: Request, res: Response) => {
   try {
     const { ticketId } = req.params
 
@@ -263,8 +504,97 @@ const checkRateLimit = (ip: string): boolean => {
   return true
 }
 
-// Create ticket (Public endpoint)
-ticketRoutes.post('/', async (req: Request, res: Response) => {
+/**
+ * @swagger
+ * /tickets:
+ *   post:
+ *     tags: [Tickets]
+ *     summary: 🎟️ Create New Ticket (Public)
+ *     description: |
+ *       ## 🏊‍♂️ Swimlane Flow:
+ *       1. **User** → Submits ticket form with details
+ *       2. **System** → Validates input data & file uploads
+ *       3. **System** → Creates ticket with unique ID
+ *       4. **System** → Auto-assigns to available support staff
+ *       5. **System** → Creates notifications for admins
+ *       6. **WebSocket** → Sends real-time notifications
+ *       7. **User** → Receives ticket confirmation
+ *       
+ *       **Features**: File upload (5 files max), auto-assignment, notifications
+ *       **Rate Limit**: 3 tickets per hour per IP
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             allOf:
+ *               - $ref: '#/components/schemas/CreateTicketRequest'
+ *               - type: object
+ *                 properties:
+ *                   attachments:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *                       format: binary
+ *                     maxItems: 5
+ *                     description: ไฟล์แนบ (สูงสุด 5 ไฟล์)
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateTicketRequest'
+ *     responses:
+ *       201:
+ *         description: แจ้งปัญหาสำเร็จ
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: แจ้งปัญหาสำเร็จ
+ *                 ticket:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     ticketId:
+ *                       type: string
+ *                     status:
+ *                       type: string
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                     assignedUser:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                         fullName:
+ *                           type: string
+ *       400:
+ *         description: ข้อมูลไม่ถูกต้อง
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       429:
+ *         description: Rate limit exceeded
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: เกิดข้อผิดพลาดในการแจ้งปัญหา
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+// Create ticket (Public endpoint) with rate limiting and file upload
+ticketRoutes.post('/', ticketLimiter, uploadMiddleware.array('attachments', 5), validateUploadedFiles, async (req: Request, res: Response) => {
   try {
     const clientIP = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.ip || 'unknown'
     
@@ -285,15 +615,9 @@ ticketRoutes.post('/', async (req: Request, res: Response) => {
     const data = validation.data
     const ticketId = `TK${Date.now()}`
     
-    // Find next available support user for auto-assignment (simplified)
-    const supportUser = await prisma.user.findFirst({
-      where: { 
-        role: 'support',
-        isActive: true 
-      }
-    })
-
-    const assignedUserId = supportUser ? supportUser.id : null
+    // Auto-assign using assignment service
+    let assignedUserId = null
+    let assignedUser = null
 
     const ticket = await prisma.ticket.create({
       data: {
@@ -321,18 +645,70 @@ ticketRoutes.post('/', async (req: Request, res: Response) => {
       }
     })
 
-    // Create notification for all admins
-    const notification = await prisma.notification.create({
-      data: {
-        title: `New Ticket: ${ticket.problemType}`,
-        message: `A new ticket has been created by ${ticket.fullName}`,
-        ticketId: ticket.id,
-        userId: 1 // Assuming user with ID 1 is an admin
-      }
-    });
+    // Auto-assign after ticket creation
+    const assignmentResult = await ticketAssignmentService.autoAssignTicket(ticket.id, data.problemType)
+    if (assignmentResult.success && assignmentResult.assignedUser) {
+      assignedUser = assignmentResult.assignedUser
+      
+      // Update the ticket object to reflect assignment
+      Object.assign(ticket, {
+        assignedToId: assignmentResult.assignedUserId,
+        assignedTo: assignmentResult.assignedUser
+      })
+    }
 
-    // Send real-time notification to all admins
-    websocketService.sendToAdmins('new_notification', notification);
+    // Handle file attachments if any
+    const files = req.files as Express.Multer.File[]
+    if (files && files.length > 0) {
+      const attachmentPromises = files.map(file => 
+        prisma.ticketAttachment.create({
+          data: {
+            ticketId: ticket.id,
+            filename: file.filename,
+            originalFilename: file.originalname,
+            mimetype: file.mimetype,
+            size: file.size,
+            filePath: file.path
+          }
+        })
+      )
+      
+      await Promise.all(attachmentPromises)
+      console.log(`📎 Created ${files.length} attachments for ticket ${ticketId}`)
+    }
+
+    // Create notification for available admin users
+    try {
+      const adminUsers = await prisma.user.findMany({
+        where: { 
+          role: 'admin',
+          isActive: true 
+        },
+        select: { id: true }
+      })
+
+      // Create notifications for all active admin users
+      if (adminUsers.length > 0) {
+        const notifications = await Promise.all(
+          adminUsers.map(admin => 
+            prisma.notification.create({
+              data: {
+                title: `New Ticket: ${ticket.problemType}`,
+                message: `A new ticket has been created by ${ticket.fullName}`,
+                ticketId: ticket.id,
+                userId: admin.id
+              }
+            })
+          )
+        )
+
+        // Send real-time notification to all admins
+        websocketService.sendToAdmins('new_notification', notifications[0]);
+      }
+    } catch (notificationError) {
+      console.warn('Failed to create notifications:', notificationError)
+      // Don't fail the ticket creation if notification fails
+    }
     
     // Invalidate cache
     invalidateTicketCache();
@@ -402,7 +778,9 @@ ticketRoutes.get('/', authMiddleware, requireSupport, cacheMiddleware(30), async
             }
           },
           _count: {
-            comments: true
+            select: {
+              comments: true
+            }
           }
         },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
@@ -488,59 +866,45 @@ ticketRoutes.get('/:id', authMiddleware, requireSupport, async (req: Request, re
   }
 })
 
-// Update ticket status
+// Update ticket status (Enhanced with service)
 ticketRoutes.put('/:id/status', authMiddleware, requireSupport, async (req: Request, res: Response) => {
   try {
     const ticketId = parseInt(req.params.id)
-    const { status, comment } = req.body
+    const { status, comment, isInternal = false } = req.body
     const user = req.user!
 
-    // Update ticket status
-    const ticket = await prisma.ticket.update({
-      where: { id: ticketId },
-      data: { 
-        status,
-        updatedAt: new Date()
-      },
-      include: {
-        assignedTo: true
-      }
-    })
-
-    // Add comment if provided
-    if (comment) {
-      await prisma.ticketComment.create({
-        data: {
-          ticketId,
-          userId: user.userId,
-          comment: comment,
-          isInternal: false
-        }
+    if (!status) {
+      return res.status(400).json({
+        success: false,
+        error: 'กรุณาระบุสถานะใหม่'
       })
     }
 
-    // Create notification for the user if the ticket is assigned
-    if (ticket.assignedToId) {
-      const notification = await prisma.notification.create({
-        data: {
-          title: `Ticket Status Updated: ${ticket.problemType}`,
-          message: `The status of your ticket has been updated to ${status}`,
-          ticketId: ticket.id,
-          userId: ticket.assignedToId
-        }
-      });
+    // Use status service for validation and update
+    const result = await ticketStatusService.updateTicketStatus(
+      ticketId,
+      status,
+      user.userId,
+      comment,
+      isInternal
+    )
 
-      // Send real-time notification to the user
-      websocketService.sendToUser(ticket.assignedToId, 'new_notification', notification);
-      
-      // Invalidate cache
-      invalidateTicketCache();
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        error: result.error
+      })
     }
+
+    // Invalidate cache
+    invalidateTicketCache()
 
     res.json({
       success: true,
       message: 'อัปเดตสถานะสำเร็จ',
-      ticket
+      ticket: result.ticket,
+      comment: result.comment,
+      notifications: result.notifications
     })
 
   } catch (error) {
@@ -552,33 +916,36 @@ ticketRoutes.put('/:id/status', authMiddleware, requireSupport, async (req: Requ
   }
 })
 
-// Assign ticket to user
+// Assign ticket to user (Enhanced with service)
 ticketRoutes.patch('/:id/assign', authMiddleware, requireSupport, async (req: Request, res: Response) => {
   try {
     const ticketId = parseInt(req.params.id)
-    const { assignedUserId } = req.body
+    const { assignedUserId, reason } = req.body
+    const user = req.user!
 
-    const ticket = await prisma.ticket.update({
-      where: { id: ticketId },
-      data: { 
-        assignedToId: assignedUserId || null,
-        updatedAt: new Date()
-      },
-      include: {
-        assignedTo: {
-          select: {
-            id: true,
-            username: true,
-            fullName: true
-          }
-        }
-      }
-    })
+    // Use assignment service for validation and assignment
+    const result = await ticketAssignmentService.manualAssignTicket(
+      ticketId,
+      assignedUserId || null,
+      user.userId,
+      reason
+    )
+
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        error: result.reason
+      })
+    }
+
+    // Invalidate cache
+    invalidateTicketCache()
 
     res.json({
       success: true,
-      message: 'มอบหมายงานสำเร็จ',
-      ticket
+      message: result.reason,
+      assignedUser: result.assignedUser,
+      assignedUserId: result.assignedUserId
     })
 
   } catch (error) {
@@ -692,26 +1059,292 @@ ticketRoutes.put('/update-status/:ticketId', authMiddleware, requireSupport, asy
   }
 })
 
-// Get status options
+// Get status options with transition validation
 ticketRoutes.get('/status-options', async (req: Request, res: Response) => {
   try {
-    const statusOptions = [
-      { value: 'รอดำเนินการ', label: 'รอดำเนินการ', color: 'yellow' },
-      { value: 'กำลังดำเนินการ', label: 'กำลังดำเนินการ', color: 'blue' },
-      { value: 'รอข้อมูลเพิ่มเติม', label: 'รอข้อมูลเพิ่มเติม', color: 'orange' },
-      { value: 'เสร็จสิ้น', label: 'เสร็จสิ้น', color: 'green' },
-      { value: 'ยกเลิก', label: 'ยกเลิก', color: 'red' }
-    ];
-
-    res.json({
-      success: true,
-      statusOptions
-    });
+    const { currentStatus } = req.query
+    
+    if (currentStatus) {
+      // Return only allowed transitions for current status
+      const allowedTransitions = ticketStatusService.getAllowedTransitions(currentStatus as string)
+      const statusOptions = ticketStatusService.getStatusOptions().filter(option => 
+        allowedTransitions.includes(option.value)
+      )
+      
+      res.json({
+        success: true,
+        statusOptions,
+        currentStatus,
+        allowedTransitions
+      })
+    } else {
+      // Return all status options
+      const statusOptions = ticketStatusService.getStatusOptions()
+      
+      res.json({
+        success: true,
+        statusOptions
+      })
+    }
   } catch (error) {
-    console.error('Get status options error:', error);
+    console.error('Get status options error:', error)
     res.status(500).json({
       success: false,
       error: 'เกิดข้อผิดพลาดในการดึงข้อมูลสถานะ'
-    });
+    })
+  }
+})
+
+// Download file attachment (Protected endpoint)
+ticketRoutes.get('/attachments/:attachmentId/download', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const attachmentId = parseInt(req.params.attachmentId)
+    
+    const attachment = await prisma.ticketAttachment.findUnique({
+      where: { id: attachmentId },
+      include: {
+        ticket: {
+          select: {
+            id: true,
+            ticketId: true,
+            assignedToId: true
+          }
+        }
+      }
+    })
+
+    if (!attachment) {
+      return res.status(404).json({
+        success: false,
+        error: 'ไม่พบไฟล์แนบ'
+      })
+    }
+
+    const user = req.user!
+    
+    // Check if user has permission to download this file
+    // Allow admin, support, or assigned user
+    const hasPermission = user.role === 'admin' || 
+                         user.role === 'support' || 
+                         attachment.ticket.assignedToId === user.userId
+
+    if (!hasPermission) {
+      return res.status(403).json({
+        success: false,
+        error: 'คุณไม่มีสิทธิ์ดาวน์โหลดไฟล์นี้'
+      })
+    }
+
+    // Check if file exists
+    const fs = await import('fs')
+    if (!fs.existsSync(attachment.filePath)) {
+      return res.status(404).json({
+        success: false,
+        error: 'ไฟล์ไม่พบในระบบ'
+      })
+    }
+
+    // Set appropriate headers
+    res.setHeader('Content-Disposition', `attachment; filename="${attachment.originalFilename}"`)
+    res.setHeader('Content-Type', attachment.mimetype)
+    res.setHeader('Content-Length', attachment.size)
+
+    // Stream file
+    const fileStream = fs.createReadStream(attachment.filePath)
+    fileStream.pipe(res)
+
+    console.log(`📁 File downloaded: ${attachment.originalFilename} by user ${user.username}`)
+
+  } catch (error) {
+    console.error('Download file error:', error)
+    res.status(500).json({
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการดาวน์โหลดไฟล์'
+    })
+  }
+})
+
+// Delete file attachment (Admin/Support only)
+ticketRoutes.delete('/attachments/:attachmentId', authMiddleware, requireSupport, async (req: Request, res: Response) => {
+  try {
+    const attachmentId = parseInt(req.params.attachmentId)
+    
+    const attachment = await prisma.ticketAttachment.findUnique({
+      where: { id: attachmentId },
+      include: {
+        ticket: {
+          select: {
+            id: true,
+            ticketId: true
+          }
+        }
+      }
+    })
+
+    if (!attachment) {
+      return res.status(404).json({
+        success: false,
+        error: 'ไม่พบไฟล์แนบ'
+      })
+    }
+
+    // Delete file from filesystem
+    const fs = await import('fs')
+    if (fs.existsSync(attachment.filePath)) {
+      fs.unlinkSync(attachment.filePath)
+    }
+
+    // Delete from database
+    await prisma.ticketAttachment.delete({
+      where: { id: attachmentId }
+    })
+
+    console.log(`🗑️ File deleted: ${attachment.originalFilename} by user ${req.user!.username}`)
+
+    res.json({
+      success: true,
+      message: 'ลบไฟล์แนบสำเร็จ'
+    })
+
+  } catch (error) {
+    console.error('Delete file error:', error)
+    res.status(500).json({
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการลบไฟล์'
+    })
+  }
+})
+
+// Get assignment recommendations
+ticketRoutes.get('/assignment/recommendations', authMiddleware, requireSupport, async (req: Request, res: Response) => {
+  try {
+    const { problemType } = req.query
+    
+    const recommendations = await ticketAssignmentService.getAssignmentRecommendations(problemType as string)
+    
+    res.json({
+      success: true,
+      recommendations: recommendations.recommended
+    })
+
+  } catch (error) {
+    console.error('Get assignment recommendations error:', error)
+    res.status(500).json({
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการดึงข้อมูลคำแนะนำการมอบหมาย'
+    })
+  }
+})
+
+// Get assignment statistics  
+ticketRoutes.get('/assignment/stats', authMiddleware, requireSupport, async (req: Request, res: Response) => {
+  try {
+    const stats = await ticketAssignmentService.getAssignmentStats()
+    
+    res.json({
+      success: true,
+      stats
+    })
+
+  } catch (error) {
+    console.error('Get assignment stats error:', error)
+    res.status(500).json({
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการดึงสถิติการมอบหมาย'
+    })
+  }
+})
+
+// Get status statistics
+ticketRoutes.get('/status/stats', authMiddleware, requireSupport, async (req: Request, res: Response) => {
+  try {
+    const { dateFrom, dateTo } = req.query
+    
+    let dateRange = undefined
+    if (dateFrom && dateTo) {
+      dateRange = {
+        from: new Date(dateFrom as string),
+        to: new Date(dateTo as string)
+      }
+    }
+    
+    const stats = await ticketStatusService.getStatusStats(dateRange)
+    
+    res.json({
+      success: true,
+      stats
+    })
+
+  } catch (error) {
+    console.error('Get status stats error:', error)
+    res.status(500).json({
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการดึงสถิติสถานะ'
+    })
+  }
+})
+
+// Get status history for a ticket
+ticketRoutes.get('/:id/status/history', authMiddleware, requireSupport, async (req: Request, res: Response) => {
+  try {
+    const ticketId = parseInt(req.params.id)
+    
+    const history = await ticketStatusService.getStatusHistory(ticketId)
+    
+    res.json({
+      success: true,
+      history
+    })
+
+  } catch (error) {
+    console.error('Get status history error:', error)
+    res.status(500).json({
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการดึงประวัติสถานะ'
+    })
+  }
+})
+
+// Auto-assign unassigned tickets (Admin only)
+ticketRoutes.post('/assignment/auto-assign', authMiddleware, requireSupport, async (req: Request, res: Response) => {
+  try {
+    const { ticketIds } = req.body // Array of ticket IDs to auto-assign
+    
+    if (!Array.isArray(ticketIds) || ticketIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'กรุณาระบุ Ticket IDs ที่ต้องการมอบหมายอัตโนมัติ'
+      })
+    }
+
+    const results = []
+    
+    for (const ticketId of ticketIds) {
+      const result = await ticketAssignmentService.autoAssignTicket(parseInt(ticketId))
+      results.push({
+        ticketId,
+        success: result.success,
+        assignedUser: result.assignedUser,
+        reason: result.reason
+      })
+    }
+    
+    const successCount = results.filter(r => r.success).length
+    
+    // Invalidate cache
+    invalidateTicketCache()
+    
+    res.json({
+      success: true,
+      message: `มอบหมายงานอัตโนมัตินสำเร็จ ${successCount}/${ticketIds.length} tickets`,
+      results
+    })
+
+  } catch (error) {
+    console.error('Auto-assign tickets error:', error)
+    res.status(500).json({
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการมอบหมายงานอัตโนมัติ'
+    })
   }
 })

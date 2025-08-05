@@ -1,7 +1,8 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import { IncomingMessage, Server } from 'http';
 import jwt from 'jsonwebtoken';
-import { prisma } from '../db/connection'; // ใช้ Prisma แทน query
+import { prisma } from '../db/connection';
+import { ultraCache } from '../middleware/ultraCache';
 
 interface AuthenticatedWebSocket extends WebSocket {
   userId: number;
@@ -39,12 +40,25 @@ class WebSocketService {
       const authWs = ws as AuthenticatedWebSocket;
       
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-        console.log('✅ JWT Token decoded successfully:', decoded);
-        authWs.userId = decoded.userId;
-        authWs.username = decoded.username;
-        authWs.role = decoded.role;
-        authWs.isAlive = true;
+        // ⚡ ULTRA OPTIMIZATION: ตรวจสอบ cache ก่อน verify JWT
+        const cachedAuth = ultraCache.getToken(token);
+        if (cachedAuth) {
+          authWs.userId = cachedAuth.userId;
+          authWs.username = 'cached';
+          authWs.role = cachedAuth.role;
+          authWs.isAlive = true;
+          console.log('⚡ WebSocket auth from CACHE:', cachedAuth.userId);
+        } else {
+          const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+          console.log('✅ JWT Token decoded successfully:', decoded);
+          authWs.userId = decoded.userId;
+          authWs.username = decoded.username;
+          authWs.role = decoded.role;
+          authWs.isAlive = true;
+          
+          // Cache the token for next time
+          ultraCache.setToken(token, { userId: decoded.userId, role: decoded.role });
+        }
       } catch (jwtError) {
         console.error('❌ JWT Verification failed:', jwtError);
         ws.close(1011, 'Authentication failed: Invalid or expired token');

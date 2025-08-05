@@ -15,14 +15,36 @@ model User {
   email           String?         @unique @db.VarChar(100)
   role            UserRole        @default(user)
   isActive        Boolean         @default(true) @map("is_active")
+  autoAssignEnabled Boolean       @default(true) @map("auto_assign_enabled")
   createdAt       DateTime        @default(now()) @map("created_at")
   updatedAt       DateTime        @updatedAt @map("updated_at")
   lastLogin       DateTime?       @map("last_login")
+  lastAssignedAt  DateTime?       @map("last_assigned_at")
   notifications   Notification[]
   comments        TicketComment[]
   assignedTickets Ticket[]        @relation("AssignedTo")
+  passwordResets  PasswordReset[]
+  autoAssignRequests AutoAssignRequest[]
+  approvedRequests AutoAssignRequest[] @relation("AutoAssignApprover")
+  userActivitiesAsTarget UserActivity[] @relation("UserActivityTarget")
+  userActivitiesAsAdmin UserActivity[] @relation("UserActivityAdmin")
 
   @@map("users")
+}
+
+model PasswordReset {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  token     String   @unique @db.VarChar(255)
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_resets")
 }
 
 model Ticket {
@@ -140,4 +162,74 @@ enum CommentType {
   comment
   status_change
   assignment
+}
+
+model Category {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique @db.VarChar(50)
+  description String?  @db.VarChar(255)
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive, sortOrder])
+  @@map("categories")
+}
+
+model Priority {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique @db.VarChar(30)
+  level       Int      @unique
+  description String?  @db.VarChar(255)
+  slaHours    Int      @map("sla_hours")
+  color       String?  @db.VarChar(20)
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive, level])
+  @@map("priorities")
+}
+
+model AutoAssignRequest {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  requestType String   @map("request_type") @db.VarChar(20) // 'disable' or 'enable'
+  reason      String?  @db.VarChar(500)
+  status      String   @default("pending") @db.VarChar(20) // 'pending', 'approved', 'rejected'
+  adminNotes  String?  @map("admin_notes") @db.VarChar(500)
+  approvedBy  Int?     @map("approved_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  approvedAt  DateTime? @map("approved_at")
+  
+  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  approver User? @relation("AutoAssignApprover", fields: [approvedBy], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("auto_assign_requests")
+}
+
+model UserActivity {
+  id          Int      @id @default(autoincrement())
+  userId      Int?     @map("user_id")
+  adminId     Int      @map("admin_id")
+  action      String   @db.VarChar(50) // 'create', 'update', 'suspend', 'activate', 'delete'
+  targetType  String   @map("target_type") @db.VarChar(20) // 'user', 'ticket', 'system'
+  targetId    String?  @map("target_id") @db.VarChar(50)
+  description String   @db.VarChar(500)
+  metadata    String?  // JSON string for additional data
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user  User? @relation("UserActivityTarget", fields: [userId], references: [id])
+  admin User  @relation("UserActivityAdmin", fields: [adminId], references: [id])
+
+  @@index([userId])
+  @@index([adminId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("user_activities")
 }

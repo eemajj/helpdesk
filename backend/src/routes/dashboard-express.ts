@@ -1,12 +1,14 @@
 import { Router, Request, Response } from 'express'
 import { prisma } from '../db/connection'
 import { authMiddleware, requireSupport } from '../middleware/auth'
-import { cacheMiddleware } from '../middleware/cache'
+import { ultraCache, ultraQueryCache, getCachedUsers } from '../middleware/ultraCache'
 
 export const dashboardRoutes = Router()
 
-// Dashboard stats - CACHED
-dashboardRoutes.get('/stats', authMiddleware, requireSupport, cacheMiddleware(60), async (req: Request, res: Response) => {
+// ⚡ ULTRA OPTIMIZED Dashboard stats - ULTRA CACHED
+dashboardRoutes.get('/stats', authMiddleware, requireSupport, 
+  ultraQueryCache((req) => `dashboard_stats_${(req as any).user.role}`, 60), 
+  async (req: Request, res: Response) => {
   try {
     const [
       totalTickets,
@@ -42,8 +44,10 @@ dashboardRoutes.get('/stats', authMiddleware, requireSupport, cacheMiddleware(60
   }
 })
 
-// Recent tickets - CACHED
-dashboardRoutes.get('/tickets', authMiddleware, requireSupport, cacheMiddleware(30), async (req: Request, res: Response) => {
+// ⚡ ULTRA OPTIMIZED Recent tickets - ULTRA CACHED
+dashboardRoutes.get('/tickets', authMiddleware, requireSupport, 
+  ultraQueryCache((req) => `dashboard_tickets_${req.query.limit || 10}_${(req as any).user.role}`, 30), 
+  async (req: Request, res: Response) => {
   try {
     const limit = parseInt(req.query.limit as string) || 10
 
@@ -88,8 +92,10 @@ dashboardRoutes.get('/tickets', authMiddleware, requireSupport, cacheMiddleware(
   }
 })
 
-// Get notifications for the logged-in user - CACHED
-dashboardRoutes.get('/notifications', authMiddleware, cacheMiddleware(10), async (req: Request, res: Response) => {
+// ⚡ ULTRA OPTIMIZED Notifications - ULTRA CACHED
+dashboardRoutes.get('/notifications', authMiddleware, 
+  ultraQueryCache((req) => `notifications_${(req as any).user.userId}_${req.query.limit || 10}`, 10), 
+  async (req: Request, res: Response) => {
   try {
     // @ts-ignore
     const userId = req.user.userId;
@@ -150,21 +156,27 @@ dashboardRoutes.put('/notifications/:id/read', authMiddleware, async (req: Reque
   }
 });
 
-// Get all users for admin dashboard - CACHED
-dashboardRoutes.get('/users', authMiddleware, requireSupport, cacheMiddleware(120), async (req: Request, res: Response) => {
+// ⚡ ULTRA OPTIMIZED Users list - ULTRA CACHED
+dashboardRoutes.get('/users', authMiddleware, requireSupport, 
+  ultraQueryCache((req) => `admin_users_all`, 120), 
+  async (req: Request, res: Response) => {
   try {
     // @ts-ignore
     if (req.user.role !== 'admin') {
       return res.status(403).json({ success: false, error: 'Forbidden' })
     }
 
-    const users = await prisma.user.findMany({
+    // ✅ ใช้ cached users แทนการ query ทุกครั้ง
+    const userIds = await prisma.user.findMany({
+      select: { id: true },
       orderBy: { createdAt: 'desc' }
-    })
+    });
+    
+    const users = await getCachedUsers(userIds.map(u => u.id), prisma);
 
     res.json({
       success: true,
-      users
+      users: users.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     })
 
   } catch (error) {
@@ -172,6 +184,235 @@ dashboardRoutes.get('/users', authMiddleware, requireSupport, cacheMiddleware(12
     res.status(500).json({
       success: false,
       error: 'เกิดข้อผิดพลาดในการดึงข้อมูลผู้ใช้'
+    })
+  }
+})
+
+// Auto assign ticket to support user
+dashboardRoutes.post('/assign-ticket/:ticketId', authMiddleware, requireSupport, async (req: Request, res: Response) => {
+  try {
+    const ticketId = parseInt(req.params.ticketId)
+    const user = (req as any).user
+
+    // Only admin can manually assign tickets
+    if (user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        error: 'เฉพาะ Admin เท่านั้นที่สามารถมอบหมายงานได้'
+      })
+    }
+
+    // Import auto assign service
+    const { autoAssignService } = await import('../services/autoAssignService')
+    
+    // Try to auto assign the ticket
+    const result = await autoAssignService.autoAssignTicket(ticketId)
+    
+    if (result) {
+      // Get updated ticket info
+      const updatedTicket = await prisma.ticket.findUnique({
+        where: { id: ticketId },
+        include: {
+          assignedTo: {
+            select: {
+              fullName: true,
+              username: true
+            }
+          }
+        }
+      })
+
+      res.json({
+        success: true,
+        message: 'มอบหมายงานสำเร็จ',
+        ticket: updatedTicket
+      })
+    } else {
+      res.status(400).json({
+        success: false,
+        error: 'ไม่สามารถมอบหมายงานได้ ไม่มี Support ที่พร้อมรับงาน'
+      })
+    }
+
+  } catch (error) {
+    console.error('Auto assign ticket error:', error)
+    res.status(500).json({
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการมอบหมายงาน'
+    })
+  }
+})
+
+// Manual assign ticket to specific user
+dashboardRoutes.post('/assign-ticket/:ticketId/user/:userId', authMiddleware, requireSupport, async (req: Request, res: Response) => {
+  try {
+    const ticketId = parseInt(req.params.ticketId)
+    const assignToUserId = parseInt(req.params.userId)
+    const user = (req as any).user
+
+    // Only admin can manually assign tickets
+    if (user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        error: 'เฉพาะ Admin เท่านั้นที่สามารถมอบหมายงานได้'
+      })
+    }
+
+    // Import auto assign service
+    const { autoAssignService } = await import('../services/autoAssignService')
+    
+    // Manual assignment
+    const result = await autoAssignService.manualAssignTicket(ticketId, assignToUserId, user.userId)
+    
+    if (result) {
+      // Get updated ticket info
+      const updatedTicket = await prisma.ticket.findUnique({
+        where: { id: ticketId },
+        include: {
+          assignedTo: {
+            select: {
+              fullName: true,
+              username: true
+            }
+          }
+        }
+      })
+
+      res.json({
+        success: true,
+        message: 'มอบหมายงานสำเร็จ',
+        ticket: updatedTicket
+      })
+    } else {
+      res.status(400).json({
+        success: false,
+        error: 'ไม่สามารถมอบหมายงานได้'
+      })
+    }
+
+  } catch (error) {
+    console.error('Manual assign ticket error:', error)
+    res.status(500).json({
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการมอบหมายงาน'
+    })
+  }
+})
+
+// Update ticket status
+dashboardRoutes.put('/tickets/:ticketId/status', authMiddleware, requireSupport, async (req: Request, res: Response) => {
+  try {
+    const ticketId = parseInt(req.params.ticketId)
+    const { status, comment } = req.body
+    const user = (req as any).user
+
+    // Validate status
+    const validStatuses = ['รอดำเนินการ', 'กำลังดำเนินการ', 'เสร็จสิ้น', 'ยกเลิก']
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: 'สถานะไม่ถูกต้อง'
+      })
+    }
+
+    // Update ticket status
+    const updatedTicket = await prisma.ticket.update({
+      where: { id: ticketId },
+      data: { 
+        status,
+        updatedAt: new Date(),
+        ...(status === 'เสร็จสิ้น' && { resolvedAt: new Date() })
+      },
+      include: {
+        assignedTo: {
+          select: {
+            fullName: true,
+            username: true
+          }
+        }
+      }
+    })
+
+    // Add comment if provided
+    if (comment && comment.trim()) {
+      await prisma.ticketComment.create({
+        data: {
+          ticketId: ticketId,
+          userId: user.userId,
+          comment: comment.trim(),
+          isInternal: false
+        }
+      })
+    }
+
+    // Create notification for ticket creator if resolved
+    if (status === 'เสร็จสิ้น') {
+      await prisma.notification.create({
+        data: {
+          userId: 1, // System notification to admin
+          ticketId: ticketId,
+          title: 'แจ้งปัญหาได้รับการแก้ไขแล้ว',
+          message: `แจ้งปัญหา ${updatedTicket.ticketId} ได้รับการแก้ไขเรียบร้อยแล้ว`
+        }
+      })
+    }
+
+    // Invalidate cache
+    const { invalidateTicketCache } = await import('../middleware/cache')
+    invalidateTicketCache()
+
+    res.json({
+      success: true,
+      message: 'อัปเดตสถานะสำเร็จ',
+      ticket: updatedTicket
+    })
+
+  } catch (error) {
+    console.error('Update ticket status error:', error)
+    res.status(500).json({
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการอัปเดตสถานะ'
+    })
+  }
+})
+
+// Delete ticket (Admin only)
+dashboardRoutes.delete('/tickets/:ticketId', authMiddleware, requireSupport, async (req: Request, res: Response) => {
+  try {
+    const ticketId = parseInt(req.params.ticketId)
+    const user = (req as any).user
+
+    // Only admin can delete tickets
+    if (user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        error: 'เฉพาะ Admin เท่านั้นที่สามารถลบแจ้งปัญหาได้'
+      })
+    }
+
+    // Soft delete by updating status
+    await prisma.ticket.update({
+      where: { id: ticketId },
+      data: { 
+        status: 'ยกเลิก',
+        updatedAt: new Date()
+      }
+    })
+
+    // Invalidate cache
+    const { invalidateTicketCache } = await import('../middleware/cache')
+    invalidateTicketCache()
+
+    res.json({
+      success: true,
+      message: 'ลบแจ้งปัญหาสำเร็จ'
+    })
+
+  } catch (error) {
+    console.error('Delete ticket error:', error)
+    res.status(500).json({
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการลบแจ้งปัญหา'
     })
   }
 })
