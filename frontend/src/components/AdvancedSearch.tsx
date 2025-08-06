@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { SearchIcon, FilterIcon, XIcon, CalendarIcon } from 'lucide-react';
-import { useLanguage } from '../hooks/useLanguage';
 
 interface SearchFilters {
   keyword: string;
@@ -21,7 +20,6 @@ interface Props {
 }
 
 const AdvancedSearch: React.FC<Props> = ({ onSearch, onReset, loading, results }) => {
-  const { t } = useLanguage();
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [filters, setFilters] = useState<SearchFilters>({
     keyword: '',

@@ -76,10 +76,10 @@ const TicketFormPage: React.FC = () => {
   const onSubmit = async (data: TicketFormData) => {
     setIsSubmitting(true);
     try {
-      const response = await axios.post('/tickets', data);
+      const response = await axios.post('/api/tickets', data);
       
       if (response.data.success) {
-        const newTicketId = response.data.ticketId;
+        const newTicketId = response.data.ticket.ticketId;
         
         // แนบไฟล์กับ ticket ถ้ามี (ปิดใช้งานชั่วคราว)
         /* if (uploadedFiles.length > 0) {

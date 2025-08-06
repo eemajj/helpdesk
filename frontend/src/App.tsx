@@ -48,8 +48,22 @@ const App: React.FC = () => {
                       <Route path="/submit" element={<TicketFormPage />} />
                       <Route path="/track" element={<TicketTrackingPage />} />
                       <Route path="/login" element={<LoginPage />} />
-                      <Route path="/dashboard" element={<DashboardPage />} />
-                      <Route path="/search" element={<SearchPage />} />
+                      <Route 
+                        path="/dashboard" 
+                        element={
+                          <ProtectedRoute allowedRoles={['ADMIN', 'SUPPORT']}>
+                            <DashboardPage />
+                          </ProtectedRoute>
+                        } 
+                      />
+                      <Route 
+                        path="/search" 
+                        element={
+                          <ProtectedRoute allowedRoles={['ADMIN', 'SUPPORT']}>
+                            <SearchPage />
+                          </ProtectedRoute>
+                        } 
+                      />
                       <Route
                         path="/admin/dashboard"
                         element={

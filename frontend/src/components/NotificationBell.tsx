@@ -1,10 +1,8 @@
 import React, { useState } from 'react'
 import { Bell, X, Wifi, WifiOff } from 'lucide-react'
 import { useWebSocket } from '../hooks/useWebSocket'
-import { useLanguage } from '../hooks/useLanguage'
 
 const NotificationBell: React.FC = () => {
-  const { t } = useLanguage()
   const { isConnected, notifications, clearNotifications, markAsRead } = useWebSocket();
   const [isOpen, setIsOpen] = useState(false)
 

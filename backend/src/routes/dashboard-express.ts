@@ -112,9 +112,20 @@ dashboardRoutes.get('/notifications', authMiddleware,
       }
     });
 
+    const formattedNotifications = notifications.map((notification: any) => ({
+      id: notification.id,
+      user_id: notification.userId,
+      ticket_id: notification.ticketId,
+      title: notification.title,
+      message: notification.message,
+      is_read: notification.isRead,
+      created_at: notification.createdAt,
+      ticket: notification.ticket
+    }));
+
     res.json({
       success: true,
-      notifications
+      notifications: formattedNotifications
     });
 
   } catch (error) {
@@ -174,9 +185,22 @@ dashboardRoutes.get('/users', authMiddleware, requireSupport,
     
     const users = await getCachedUsers(userIds.map(u => u.id), prisma);
 
+    const formattedUsers = users.map((user: any) => ({
+      id: user.id,
+      username: user.username,
+      full_name: user.fullName,
+      email: user.email,
+      role: user.role,
+      is_active: user.isActive,
+      auto_assign_enabled: user.autoAssignEnabled,
+      last_login: user.lastLogin,
+      last_assigned_at: user.lastAssignedAt,
+      created_at: user.createdAt
+    }));
+
     res.json({
       success: true,
-      users: users.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      users: formattedUsers.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     })
 
   } catch (error) {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Send, MessageSquare } from 'lucide-react';
+import { X, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 

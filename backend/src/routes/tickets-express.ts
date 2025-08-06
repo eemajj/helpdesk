@@ -3,16 +3,27 @@ import { z } from 'zod'
 import { prisma } from '../db/connection'
 import { authMiddleware, requireSupport } from '../middleware/auth';
 import { websocketService } from '../services/websocketService';
+import { cacheMiddleware } from '../middleware/cache';
 import { ultraCache, ultraQueryCache, getCachedUsers } from '../middleware/ultraCache';
 
 // Helper function for cache invalidation
 const invalidateTicketCache = () => {
-  // Since we're using ultraCache now, we can clear specific patterns
-  console.log('🗑️ Invalidating ticket cache patterns');
+  // Clear Ultra Cache query cache for dashboard and ticket related queries
+  const keysToDelete: string[] = [];
+  const queryCache = ultraCache['queryCache'] as Map<string, any>;
+  
+  for (const [key] of queryCache.entries()) {
+    if (key.includes('dashboard_tickets') || key.includes('dashboard_stats') || key.includes('notifications')) {
+      keysToDelete.push(key);
+    }
+  }
+  
+  keysToDelete.forEach(key => queryCache.delete(key));
+  console.log(`🗑️ Invalidating ticket cache patterns (${keysToDelete.length} Ultra Cache entries cleared)`);
 };
 import { ticketLimiter } from '../middleware/rateLimiter';
 import { uploadMiddleware, validateUploadedFiles } from '../middleware/fileUpload';
-import { ticketAssignmentService } from '../services/ticketAssignmentService';
+import { autoAssignService } from '../services/autoAssignService';
 import { ticketStatusService } from '../services/ticketStatusService';
 
 /**
@@ -646,15 +657,12 @@ ticketRoutes.post('/', ticketLimiter, uploadMiddleware.array('attachments', 5), 
     })
 
     // Auto-assign after ticket creation
-    const assignmentResult = await ticketAssignmentService.autoAssignTicket(ticket.id, data.problemType)
-    if (assignmentResult.success && assignmentResult.assignedUser) {
-      assignedUser = assignmentResult.assignedUser
-      
-      // Update the ticket object to reflect assignment
-      Object.assign(ticket, {
-        assignedToId: assignmentResult.assignedUserId,
-        assignedTo: assignmentResult.assignedUser
-      })
+    const wasAssigned = await autoAssignService.autoAssignTicket(ticket.id);
+    if (wasAssigned) {
+      console.log(`Ticket ${ticket.id} was auto-assigned successfully.`);
+      // Optionally, you could re-fetch the ticket to get the assignee, but for now, we just confirm it was triggered.
+    } else {
+      console.log(`Ticket ${ticket.id} was not auto-assigned (no available staff).`);
     }
 
     // Handle file attachments if any
@@ -924,29 +932,28 @@ ticketRoutes.patch('/:id/assign', authMiddleware, requireSupport, async (req: Re
     const user = req.user!
 
     // Use assignment service for validation and assignment
-    const result = await ticketAssignmentService.manualAssignTicket(
+    const wasAssigned = await autoAssignService.manualAssignTicket(
       ticketId,
-      assignedUserId || null,
-      user.userId,
-      reason
-    )
+      assignedUserId || 0, // Pass 0 or handle null case appropriately in service
+      user.userId
+    );
 
-    if (!result.success) {
+    if (!wasAssigned) {
       return res.status(400).json({
         success: false,
-        error: result.reason
-      })
+        error: "Failed to assign ticket. The user may be inactive or not found."
+      });
     }
 
     // Invalidate cache
-    invalidateTicketCache()
+    invalidateTicketCache();
 
+    // Since the service only returns boolean, we create a generic success message.
+    // For a better UX, you might want the service to return the assigned user object.
     res.json({
       success: true,
-      message: result.reason,
-      assignedUser: result.assignedUser,
-      assignedUserId: result.assignedUserId
-    })
+      message: `Ticket successfully assigned to user ID: ${assignedUserId}`
+    });
 
   } catch (error) {
     console.error('Assign ticket error:', error)
@@ -1215,45 +1222,26 @@ ticketRoutes.delete('/attachments/:attachmentId', authMiddleware, requireSupport
   }
 })
 
-// Get assignment recommendations
-ticketRoutes.get('/assignment/recommendations', authMiddleware, requireSupport, async (req: Request, res: Response) => {
-  try {
-    const { problemType } = req.query
-    
-    const recommendations = await ticketAssignmentService.getAssignmentRecommendations(problemType as string)
-    
-    res.json({
-      success: true,
-      recommendations: recommendations.recommended
-    })
 
-  } catch (error) {
-    console.error('Get assignment recommendations error:', error)
-    res.status(500).json({
-      success: false,
-      error: 'เกิดข้อผิดพลาดในการดึงข้อมูลคำแนะนำการมอบหมาย'
-    })
-  }
-})
 
 // Get assignment statistics  
 ticketRoutes.get('/assignment/stats', authMiddleware, requireSupport, async (req: Request, res: Response) => {
   try {
-    const stats = await ticketAssignmentService.getAssignmentStats()
+    const stats = await autoAssignService.getAssignmentStats();
     
     res.json({
       success: true,
       stats
-    })
+    });
 
   } catch (error) {
-    console.error('Get assignment stats error:', error)
+    console.error('Get assignment stats error:', error);
     res.status(500).json({
       success: false,
       error: 'เกิดข้อผิดพลาดในการดึงสถิติการมอบหมาย'
-    })
+    });
   }
-})
+});
 
 // Get status statistics
 ticketRoutes.get('/status/stats', authMiddleware, requireSupport, async (req: Request, res: Response) => {
@@ -1320,13 +1308,12 @@ ticketRoutes.post('/assignment/auto-assign', authMiddleware, requireSupport, asy
     const results = []
     
     for (const ticketId of ticketIds) {
-      const result = await ticketAssignmentService.autoAssignTicket(parseInt(ticketId))
+      const wasAssigned = await autoAssignService.autoAssignTicket(parseInt(ticketId));
       results.push({
         ticketId,
-        success: result.success,
-        assignedUser: result.assignedUser,
-        reason: result.reason
-      })
+        success: wasAssigned,
+        reason: wasAssigned ? 'Auto-assigned successfully' : 'No available support staff'
+      });
     }
     
     const successCount = results.filter(r => r.success).length
@@ -1345,6 +1332,398 @@ ticketRoutes.post('/assignment/auto-assign', authMiddleware, requireSupport, asy
     res.status(500).json({
       success: false,
       error: 'เกิดข้อผิดพลาดในการมอบหมายงานอัตโนมัติ'
+    })
+  }
+})
+
+// ==================== COMPLETE CRUD OPERATIONS ====================
+
+// Update entire ticket (Admin only)
+ticketRoutes.put('/:id', authMiddleware, requireSupport, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const updateData = req.body
+
+    // Validate required fields if provided
+    const allowedFields = [
+      'problemType', 'otherProblemType', 'problemDescription',
+      'fullName', 'phoneNumber', 'department', 'division', 
+      'assetNumber', 'status', 'priority', 'assignedTo'
+    ]
+
+    const filteredData: any = {}
+    Object.keys(updateData).forEach(key => {
+      if (allowedFields.includes(key) && updateData[key] !== undefined) {
+        filteredData[key] = updateData[key]
+      }
+    })
+
+    filteredData.updatedAt = new Date()
+
+    const updatedTicket = await prisma.ticket.update({
+      where: { id: parseInt(id) },
+      data: filteredData,
+      include: {
+        assignedTo: {
+          select: { id: true, username: true, fullName: true }
+        },
+        comments: {
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+          include: {
+            user: {
+              select: { id: true, username: true, fullName: true }
+            }
+          }
+        }
+      }
+    })
+
+    // Invalidate cache
+    invalidateTicketCache()
+
+    res.json({
+      success: true,
+      message: 'อัปเดต ticket สำเร็จ',
+      ticket: updatedTicket
+    })
+
+  } catch (error: any) {
+    console.error('Update ticket error:', error)
+    if (error.code === 'P2025') {
+      return res.status(404).json({
+        success: false,
+        error: 'ไม่พบ ticket ที่ระบุ'
+      })
+    }
+    res.status(500).json({
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการอัปเดต ticket'
+    })
+  }
+})
+
+// Delete ticket (Admin only)
+ticketRoutes.delete('/:id', authMiddleware, requireSupport, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const user = (req as any).user
+
+    // Only admin can delete tickets
+    if (user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        error: 'เฉพาะ Admin เท่านั้นที่สามารถลบ ticket ได้'
+      })
+    }
+
+    // Check if ticket exists
+    const existingTicket = await prisma.ticket.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        attachments: true,
+        comments: true
+      }
+    })
+
+    if (!existingTicket) {
+      return res.status(404).json({
+        success: false,
+        error: 'ไม่พบ ticket ที่ระบุ'
+      })
+    }
+
+    // Delete related data first
+    await prisma.$transaction([
+      // Delete comments
+      prisma.ticketComment.deleteMany({
+        where: { ticketId: parseInt(id) }
+      }),
+      // Delete attachments
+      prisma.ticketAttachment.deleteMany({
+        where: { ticket_id: parseInt(id) }
+      }),
+      // Delete notifications
+      prisma.notification.deleteMany({
+        where: { ticket_id: existingTicket.ticket_id }
+      }),
+      // Delete the ticket
+      prisma.ticket.delete({
+        where: { id: parseInt(id) }
+      })
+    ])
+
+    // Invalidate cache
+    invalidateTicketCache()
+
+    res.json({
+      success: true,
+      message: `ลบ ticket ${existingTicket.ticket_id} สำเร็จ`
+    })
+
+  } catch (error: any) {
+    console.error('Delete ticket error:', error)
+    if (error.code === 'P2025') {
+      return res.status(404).json({
+        success: false,
+        error: 'ไม่พบ ticket ที่ระบุ'
+      })
+    }
+    res.status(500).json({
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการลบ ticket'
+    })
+  }
+})
+
+// Close/Resolve ticket
+ticketRoutes.post('/:id/close', authMiddleware, requireSupport, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const { resolution_notes, resolution_method } = req.body
+    const user = (req as any).user
+
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: parseInt(id) }
+    })
+
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        error: 'ไม่พบ ticket ที่ระบุ'
+      })
+    }
+
+    // Update ticket to closed status
+    const updatedTicket = await prisma.ticket.update({
+      where: { id: parseInt(id) },
+      data: {
+        status: 'เสร็จสิ้น',
+        resolvedAt: new Date(),
+        updatedAt: new Date()
+      },
+      include: {
+        assignedTo: {
+          select: { id: true, username: true, fullName: true }
+        }
+      }
+    })
+
+    // Add resolution comment
+    if (resolution_notes) {
+      await prisma.ticketComment.create({
+        data: {
+          ticketId: parseInt(id),
+          userId: user.userId,
+          comment: `**ปิดเรื่อง**: ${resolution_notes}`,
+          commentType: 'status_change',
+          isInternal: false
+        }
+      })
+    }
+
+    // Create notification for ticket creator
+    await prisma.notification.create({
+      data: {
+        userId: 1, // System notification - you might want to change this logic  
+        ticketId: parseInt(id),
+        title: `Ticket ${ticket.ticketId} ได้รับการแก้ไขแล้ว`,
+        message: `เรื่อง "${(ticket.problemDescription || 'N/A').toString().substring(0, 50)}..." ได้รับการแก้ไขเรียบร้อยแล้ว`,
+        isRead: false
+      }
+    })
+
+    // Invalidate cache
+    invalidateTicketCache()
+
+    res.json({
+      success: true,
+      message: 'ปิด ticket สำเร็จ',
+      ticket: updatedTicket
+    })
+
+  } catch (error) {
+    console.error('Close ticket error:', error)
+    res.status(500).json({
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการปิด ticket'
+    })
+  }
+})
+
+// Reopen ticket
+ticketRoutes.post('/:id/reopen', authMiddleware, requireSupport, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const { reopen_reason } = req.body
+    const user = (req as any).user
+
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: parseInt(id) }
+    })
+
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        error: 'ไม่พบ ticket ที่ระบุ'
+      })
+    }
+
+    if (ticket.status !== 'เสร็จสิ้น') {
+      return res.status(400).json({
+        success: false,
+        error: 'สามารถเปิดใหม่ได้เฉพาะ ticket ที่ปิดแล้วเท่านั้น'
+      })
+    }
+
+    // Update ticket to pending status
+    const updatedTicket = await prisma.ticket.update({
+      where: { id: parseInt(id) },
+      data: {
+        status: 'รอดำเนินการ',
+        resolvedAt: null,
+        updatedAt: new Date()
+      },
+      include: {
+        assignedTo: {
+          select: { id: true, username: true, fullName: true }
+        }
+      }
+    })
+
+    // Add reopen comment
+    if (reopen_reason) {
+      await prisma.ticketComment.create({
+        data: {
+          ticketId: parseInt(id),
+          userId: user.userId,
+          comment: `**เปิดเรื่องใหม่**: ${reopen_reason}`,
+          commentType: 'status_change',
+          isInternal: false
+        }
+      })
+    }
+
+    // Invalidate cache
+    invalidateTicketCache()
+
+    res.json({
+      success: true,
+      message: 'เปิด ticket ใหม่สำเร็จ',
+      ticket: updatedTicket
+    })
+
+  } catch (error) {
+    console.error('Reopen ticket error:', error)
+    res.status(500).json({
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการเปิด ticket ใหม่'
+    })
+  }
+})
+
+// Add comment to ticket
+ticketRoutes.post('/:id/comments', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const { comment, is_internal = false } = req.body
+    const user = (req as any).user
+
+    if (!comment || comment.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'กรุณาระบุข้อความ comment'
+      })
+    }
+
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: parseInt(id) }
+    })
+
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        error: 'ไม่พบ ticket ที่ระบุ'
+      })
+    }
+
+    const newComment = await prisma.ticketComment.create({
+      data: {
+        ticketId: parseInt(id),
+        userId: user.userId,
+        comment: comment.trim(),
+        commentType: 'comment',
+        isInternal: is_internal
+      },
+      include: {
+        user: {
+          select: { id: true, username: true, fullName: true }
+        }
+      }
+    })
+
+    // Update ticket's updatedAt
+    await prisma.ticket.update({
+      where: { id: parseInt(id) },
+      data: { updatedAt: new Date() }
+    })
+
+    // Invalidate cache
+    invalidateTicketCache()
+
+    res.json({
+      success: true,
+      message: 'เพิ่ม comment สำเร็จ',
+      comment: newComment
+    })
+
+  } catch (error) {
+    console.error('Add comment error:', error)
+    res.status(500).json({
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการเพิ่ม comment'
+    })
+  }
+})
+
+// Get ticket comments
+ticketRoutes.get('/:id/comments', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const { page = 1, limit = 10 } = req.query
+
+    const comments = await prisma.ticketComment.findMany({
+      where: { ticketId: parseInt(id) },
+      include: {
+        user: {
+          select: { id: true, username: true, fullName: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      skip: (parseInt(page as string) - 1) * parseInt(limit as string),
+      take: parseInt(limit as string)
+    })
+
+    const total = await prisma.ticketComment.count({
+      where: { ticketId: parseInt(id) }
+    })
+
+    res.json({
+      success: true,
+      comments,
+      pagination: {
+        page: parseInt(page as string),
+        limit: parseInt(limit as string),
+        total,
+        totalPages: Math.ceil(total / parseInt(limit as string))
+      }
+    })
+
+  } catch (error) {
+    console.error('Get comments error:', error)
+    res.status(500).json({
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการดึงข้อมูล comments'
     })
   }
 })

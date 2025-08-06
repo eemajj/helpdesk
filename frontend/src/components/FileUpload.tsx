@@ -147,7 +147,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
     const files = Array.from(e.dataTransfer.files)
     uploadFiles(files)
-  }, [disabled, uploadedFiles, maxFiles])
+  }, [disabled, uploadedFiles, maxFiles, uploadFiles])
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (disabled) return

@@ -1,13 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useLanguage } from '../hooks/useLanguage';
 import { Navigate } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import AdvancedSearch from '../components/AdvancedSearch';
 import { useWebSocket } from '../hooks/useWebSocket';
-import { useDebounce } from '../hooks/useDebounce';
-import { useVirtualization } from '../hooks/useVirtualization';
 import { 
   TicketIcon, 
   UserIcon, 
@@ -48,17 +45,12 @@ interface Ticket {
 
 const SearchPage: React.FC = () => {
   const { isAuthenticated, logout } = useAuth();
-  // const { t } = useLanguage(); // TODO: Use for translations
   const { lastTicketUpdate } = useWebSocket();
   
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
   const [currentFilters, setCurrentFilters] = useState<SearchFilters | null>(null);
-  const [searchKeyword] = useState(''); // TODO: Implement search functionality
-  
-  // Debounce search input
-  const debouncedSearchKeyword = useDebounce(searchKeyword, 300);
   
   // TODO: Implement virtualization for large lists
   // const { visibleItems, handleScroll, totalHeight } = useVirtualization(tickets, {

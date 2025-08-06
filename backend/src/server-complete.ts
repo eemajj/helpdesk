@@ -185,7 +185,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 })
 
 // Start server
-const server = app.listen(port, '127.0.0.1', () => {
+const server = app.listen(port, () => {
   console.log(`🚀 DWF Helpdesk Complete API starting on port ${port}`);
   console.log(`✅ Server running on http://localhost:${port}`);
   console.log(`🏃‍♂️ Runtime: Bun v${process.versions.bun || 'Unknown'}`);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../hooks/useLanguage';
 import { Navigate } from 'react-router-dom';
@@ -15,8 +15,7 @@ import {
   TicketIcon,
   UsersIcon,
   SettingsIcon,
-  RefreshCcwIcon,
-  ShieldIcon
+  RefreshCcwIcon
 } from 'lucide-react';
 
 interface DashboardStats {
@@ -39,14 +38,6 @@ interface Ticket {
   assigned_to_name?: string;
 }
 
-interface Notification {
-  id: number;
-  title: string;
-  message: string;
-  is_read: boolean;
-  created_at: string;
-  ticket_id?: string;
-}
 
 interface User {
   id: number;
@@ -95,7 +86,7 @@ const DashboardPage: React.FC = () => {
     }
   );
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       const requests = [
@@ -126,11 +117,17 @@ const DashboardPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.role, logout]);
 
   const updateTicketStatus = async (ticketId: number, newStatus: string) => {
     try {
-      await api.put(`/tickets/${ticketId}/status`, { status: newStatus });
+      if (newStatus === 'เสร็จสิ้น') {
+        // Use the close endpoint for completing tickets
+        await api.post(`/tickets/${ticketId}/close`, { resolution_notes: 'ปิดงานผ่าน Dashboard' });
+      } else {
+        // Use the status endpoint for other status changes
+        await api.put(`/tickets/${ticketId}/status`, { status: newStatus });
+      }
       toast.success('อัปเดตสถานะสำเร็จ');
       fetchDashboardData();
     } catch (error: any) {
@@ -154,8 +151,7 @@ const DashboardPage: React.FC = () => {
     if (isAuthenticated) {
       fetchDashboardData();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated]);
+  }, [isAuthenticated, fetchDashboardData]);
 
   useEffect(() => {
     if (lastTicketUpdate) {
@@ -166,8 +162,7 @@ const DashboardPage: React.FC = () => {
       ));
       fetchDashboardData();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lastTicketUpdate]);
+  }, [lastTicketUpdate, fetchDashboardData]);
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;

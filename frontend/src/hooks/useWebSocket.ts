@@ -120,7 +120,7 @@ export const useWebSocket = () => {
     return () => {
       disconnect();
     };
-  }, [isAuthenticated, user]); // ลบ connect, disconnect ออกเพื่อป้องกัน infinite loop
+  }, [isAuthenticated, user, connect, disconnect]);
 
   const sendMessage = useCallback((message: WebSocketMessage) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
