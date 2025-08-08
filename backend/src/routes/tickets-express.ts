@@ -1441,11 +1441,11 @@ ticketRoutes.delete('/:id', authMiddleware, requireSupport, async (req: Request,
       }),
       // Delete attachments
       prisma.ticketAttachment.deleteMany({
-        where: { ticket_id: parseInt(id) }
+        where: { ticketId: parseInt(id) }
       }),
       // Delete notifications
       prisma.notification.deleteMany({
-        where: { ticket_id: existingTicket.ticket_id }
+        where: { ticketId: existingTicket.id }
       }),
       // Delete the ticket
       prisma.ticket.delete({
@@ -1458,7 +1458,7 @@ ticketRoutes.delete('/:id', authMiddleware, requireSupport, async (req: Request,
 
     res.json({
       success: true,
-      message: `ลบ ticket ${existingTicket.ticket_id} สำเร็จ`
+      message: `ลบ ticket ${existingTicket.ticketId} สำเร็จ`
     })
 
   } catch (error: any) {

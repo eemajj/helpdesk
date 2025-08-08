@@ -4,8 +4,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import axios from 'axios';
-import { Send, AlertCircle, CheckCircle } from 'lucide-react';
+import { Send, AlertCircle, CheckCircle, FileText, User, Building2, ArrowLeft, Loader2, Phone, Mail, MapPin, Star, Trophy, Search } from 'lucide-react';
 import { useLanguage } from '../hooks/useLanguage';
+import { Link } from 'react-router-dom';
 // import FileUpload from '../components/FileUpload';
 
 const ProblemType = z.enum([
@@ -54,6 +55,8 @@ const TicketFormPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [ticketId, setTicketId] = useState<string>('');
+  const [currentStep, setCurrentStep] = useState(1);
+  const [formProgress, setFormProgress] = useState(0);
   // const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
 
   const {
@@ -115,40 +118,63 @@ const TicketFormPage: React.FC = () => {
 
   if (submitSuccess) {
     return (
-      <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4">
-        <div className="max-w-md w-full text-center animate-fade-in">
-          <div className="card">
-            <div className="card-body py-8">
-              <div className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
+      <div className="min-h-[calc(100vh-8rem)] bg-gradient-to-br from-green-50 via-white to-primary-50 dark:from-green-900/20 dark:via-gray-800 dark:to-primary-900/10 flex items-center justify-center px-4">
+        <div className="max-w-lg w-full text-center animate-fade-in">
+          <div className="relative bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-3xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+            {/* Success Animation Background */}
+            <div className="absolute inset-0 opacity-5">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(34,197,94,0.3)_0%,transparent_70%)]"></div>
+            </div>
+            
+            <div className="relative px-8 py-12">
+              {/* Success Icon */}
+              <div className="relative mb-8">
+                <div className="w-24 h-24 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-green-500/25">
+                  <CheckCircle className="w-12 h-12 text-white" />
+                </div>
+                <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                  <Star className="w-4 h-4 text-white" />
+                </div>
               </div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                {t('ticketForm.success.title')}
+              
+              <h2 className="text-3xl font-bold mb-4">
+                <span className="bg-gradient-to-r from-green-600 to-emerald-600 dark:from-green-400 dark:to-emerald-400 bg-clip-text text-transparent">
+                  {t('ticketForm.success.title')}
+                </span>
               </h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
+              
+              <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
                 {t('ticketForm.success.ticketId')}
               </p>
-              <div className="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-4 mb-6">
-                <code className="text-lg font-bold text-primary-600 dark:text-primary-400">
+              
+              <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/30 dark:to-primary-800/30 rounded-2xl p-6 mb-8 border border-primary-200/50 dark:border-primary-700/50">
+                <div className="text-sm text-primary-600 dark:text-primary-400 font-semibold mb-2">หมายเลข Ticket</div>
+                <code className="text-2xl font-bold text-primary-700 dark:text-primary-300 bg-white dark:bg-gray-800 px-4 py-2 rounded-xl">
                   {ticketId}
                 </code>
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-                {t('ticketForm.success.saveCode')}
-              </p>
-              <div className="space-y-3">
+              
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-4 mb-8 border border-blue-200/50 dark:border-blue-800/50">
+                <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+                  💡 {t('ticketForm.success.saveCode')}
+                </p>
+              </div>
+              
+              <div className="space-y-4">
                 <button
                   onClick={handleNewTicket}
-                  className="btn-primary w-full"
+                  className="w-full bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold py-4 px-6 rounded-2xl hover:from-primary-700 hover:to-primary-800 hover:scale-105 transition-all duration-300 shadow-lg shadow-primary-500/25"
                 >
+                  <FileText className="w-5 h-5 mr-2 inline" />
                   {t('ticketForm.success.newTicket')}
                 </button>
-                <a
-                  href="/track"
-                  className="btn-secondary w-full"
+                <Link
+                  to="/track"
+                  className="w-full inline-flex items-center justify-center bg-white dark:bg-gray-800 text-primary-700 dark:text-primary-300 font-semibold py-4 px-6 rounded-2xl border-2 border-primary-200 dark:border-primary-800 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:scale-105 transition-all duration-300"
                 >
+                  <Search className="w-5 h-5 mr-2" />
                   {t('ticketForm.success.trackTicket')}
-                </a>
+                </Link>
               </div>
             </div>
           </div>
@@ -158,24 +184,70 @@ const TicketFormPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-[calc(100vh-8rem)] py-8 px-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-8 animate-fade-in">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            {t('ticketForm.title')}
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            {t('ticketForm.description')}
-          </p>
+    <div className="min-h-[calc(100vh-8rem)]">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 py-12">
+        <div className="max-w-2xl mx-auto px-4">
+          <div className="text-center animate-fade-in">
+            <FileText className="w-16 h-16 text-primary-600 dark:text-primary-400 mx-auto mb-4" />
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+              {t('ticketForm.title')}
+            </h1>
+            <p className="text-lg text-gray-600 dark:text-gray-400">
+              {t('ticketForm.description')}
+            </p>
+          </div>
         </div>
+      </div>
+
+      {/* Progress Steps */}
+      <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+        <div className="max-w-2xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center text-sm font-medium">1</div>
+              <span className="text-sm font-medium text-primary-600 dark:text-primary-400">ข้อมูลปัญหา</span>
+            </div>
+            <div className="flex-1 h-1 bg-gray-200 dark:bg-gray-700 mx-4 rounded"></div>
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 text-gray-500 rounded-full flex items-center justify-center text-sm font-medium">2</div>
+              <span className="text-sm text-gray-500 dark:text-gray-400">ข้อมูลผู้แจ้ง</span>
+            </div>
+            <div className="flex-1 h-1 bg-gray-200 dark:bg-gray-700 mx-4 rounded"></div>
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 text-gray-500 rounded-full flex items-center justify-center text-sm font-medium">3</div>
+              <span className="text-sm text-gray-500 dark:text-gray-400">ส่งคำขอ</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Form Content */}
+      <div className="py-8 px-4">
+        <div className="max-w-4xl mx-auto">
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 animate-slide-up">
-          {/* ข้อมูลปัญหา */}
-          <div className="card">
-            <div className="card-header">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {t('ticketForm.sections.problemInfo')}
-              </h2>
+          {/* ข้อมูลปัญหา - Step 1 */}
+          <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-3xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+            <div className="bg-gradient-to-r from-red-50 via-orange-50 to-yellow-50 dark:from-red-900/20 dark:via-orange-900/20 dark:to-yellow-900/20 p-6 border-b border-gray-200/50 dark:border-gray-700/50">
+              <div className="flex items-center space-x-4">
+                <div className="relative">
+                  <div className="w-14 h-14 bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
+                    <AlertCircle className="w-7 h-7 text-white" />
+                  </div>
+                  <div className="absolute -top-1 -right-1 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center">
+                    <span className="text-xs font-bold text-gray-900">1</span>
+                  </div>
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                    📝 {t('ticketForm.sections.problemInfo')}
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                    กรุณาอธิบายปัญหาที่พบอย่างละเอียด เพื่อให้ทีมงานสามารถแก้ไขได้อย่างถูกต้อง
+                  </p>
+                </div>
+              </div>
             </div>
             <div className="card-body space-y-6">
               <div>
@@ -256,9 +328,17 @@ const TicketFormPage: React.FC = () => {
           {/* ข้อมูลติดต่อ */}
           <div className="card">
             <div className="card-header">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {t('ticketForm.sections.contactInfo')}
-              </h2>
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+                  <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {t('ticketForm.sections.contactInfo')}
+                  </h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">ข้อมูลสำหรับการติดต่อกลับ</p>
+                </div>
+              </div>
             </div>
             <div className="card-body space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
@@ -307,9 +387,17 @@ const TicketFormPage: React.FC = () => {
           {/* ข้อมูลหน่วยงาน */}
           <div className="card">
             <div className="card-header">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {t('ticketForm.sections.organizationInfo')}
-              </h2>
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
+                  <Building2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {t('ticketForm.sections.organizationInfo')}
+                  </h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">ข้อมูลหน่วยงานและครุภัณฑ์</p>
+                </div>
+              </div>
             </div>
             <div className="card-body space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
@@ -413,6 +501,7 @@ const TicketFormPage: React.FC = () => {
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

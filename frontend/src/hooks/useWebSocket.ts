@@ -84,7 +84,7 @@ export const useWebSocket = () => {
     } catch (error) {
       console.error('❌ Failed to create WebSocket:', error);
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const disconnect = useCallback(() => {
     if (wsRef.current) {

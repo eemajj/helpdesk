@@ -10,7 +10,8 @@
     "track": "ติดตามสถานะ",
     "search": "ค้นหาขั้นสูง",
     "login": "เข้าสู่ระบบ",
-    "dashboard": "แผงควบคุม",
+    "dashboard": "Dashboard",
+    "admin": "จัดการระบบ",
     "logout": "ออกจากระบบ",
     "skipToContent": "ข้ามไปยังเนื้อหาหลัก"
   },
@@ -53,11 +54,11 @@
       "title": "ประเภทปัญหาที่รองรับ",
       "description": "เราให้บริการแก้ไขปัญหาระบบ IT ครอบคลุมทุกด้าน",
       "computer": "ปัญหาฮาร์ดแวร์ ซอฟต์แวร์ ไวรัส",
-      "internet": "ปัญหาการเชื่อมต่ออินเทอร์เน็ต เครือข่าย",
-      "printer": "ปัญหาการพิมพ์ ติดตั้งไดรเวอร์",
-      "information": "ปัญหาระบบงานต่าง ๆ ของกรม",
-      "installation": "ติดตั้งโปรแกรม อุปกรณ์ใหม่",
-      "others": "ปัญหาอื่น ๆ ที่เกี่ยวกับ IT"
+      "internet": "อินเทอร์เน็ต",
+      "printer": "ปริ้นเตอร์",
+      "information": "ระบบสารสนเทศ",
+      "installation": "ติดตั้ง",
+      "others": "อื่น ๆ"
     },
     "cta": {
       "title": "พร้อมแจ้งปัญหาแล้วหรือยัง?",
@@ -242,7 +243,26 @@
         "reports": "รายงานและสถิติ",
         "exportPDF": "ส่งออกข้อมูล PDF"
       }
-    }
+    },
+    "tabs": {
+      "all": "ทั้งหมด",
+      "pending": "รอดำเนินการ",
+      "inProgress": "กำลังดำเนินการ",
+      "completed": "เสร็จสิ้น",
+      "unassigned": "ยังไม่มอบหมาย"
+    },
+    "ticketStatus": {
+      "PENDING": "รอดำเนินการ",
+      "IN_PROGRESS": "กำลังดำเนินการ",
+      "WAITING_INFO": "รอข้อมูลเพิ่มเติม",
+      "COMPLETED": "เสร็จสิ้น",
+      "CANCELLED": "ยกเลิก"
+    },
+    "myTickets": "Ticket ของฉัน",
+    "noTicketsInThisCategory": "ไม่มี Ticket ในหมวดนี้",
+    "noUnassignedTickets": "ไม่มี Ticket ที่รอมอบหมาย",
+    "notifications": "การแจ้งเตือน",
+    "noNewNotifications": "ไม่มีการแจ้งเตือนใหม่"
   },
   "common": {
     "loading": "กำลังโหลด...",
@@ -260,7 +280,20 @@
     "filter": "กรอง",
     "export": "ส่งออก",
     "import": "นำเข้า",
-    "refresh": "รีเฟรช"
+    "refresh": "รีเฟรช",
+    "user": "ผู้ใช้",
+    "role": {
+      "user": "ผู้ใช้ทั่วไป",
+      "support": "เจ้าหน้าที่",
+      "admin": "ผู้ดูแลระบบ"
+    },
+    "status": "สถานะ",
+    "active": "เปิดใช้งาน",
+    "inactive": "ปิดใช้งาน",
+    "createdAt": "สร้างเมื่อ",
+    "actions": "การกระทำ",
+    "createUser": "สร้างผู้ใช้",
+    "accept": "รับงาน"
   },
   "footer": {
     "copyright": "© 2025 กรมกิจการสตรีและสถาบันครอบครัว - ระบบแจ้งปัญหา"

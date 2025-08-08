@@ -1,434 +1,133 @@
+
 import express from 'express';
-import { authMiddleware as authenticateToken } from '../middleware/auth';
-import { autoAssignService } from '../services/autoAssignService';
-import { userManagementService } from '../services/userManagementService';
-import { z } from 'zod';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient, UserRole } from '@prisma/client';
+import bcrypt from 'bcryptjs';
+import { authMiddleware, requireAdmin } from '../middleware/auth';
 
-const router = express.Router();
 const prisma = new PrismaClient();
+const router = express.Router();
 
-/**
- * Middleware to ensure admin role
- */
-const requireAdmin = (req: any, res: any, next: any) => {
-  if (req.user?.role !== 'admin') {
-    return res.status(403).json({
-      success: false,
-      error: 'Admin access required'
-    });
-  }
-  next();
-};
+// Middleware to ensure only admins can access these routes
+router.use(authMiddleware, requireAdmin);
 
-// Validation schemas
-const createUserSchema = z.object({
-  username: z.string().min(3).max(50),
-  password: z.string().min(6),
-  fullName: z.string().min(1).max(100),
-  email: z.string().email().optional(),
-  role: z.enum(['admin', 'support', 'user'])
-});
-
-const updateUserSchema = z.object({
-  fullName: z.string().min(1).max(100).optional(),
-  email: z.string().email().optional(),
-  role: z.enum(['admin', 'support', 'user']).optional(),
-  autoAssignEnabled: z.boolean().optional()
-});
-
-const resetPasswordSchema = z.object({
-  newPassword: z.string().min(6)
-});
-
-/**
- * USER MANAGEMENT ROUTES
- */
-
-// GET /api/admin/users - Get all users with filtering
-router.get('/users', authenticateToken, requireAdmin, async (req: any, res: any) => {
+// GET admin statistics
+router.get('/stats', async (req, res) => {
   try {
-    const { role, isActive, search, page, limit } = req.query;
-    
-    const result = await userManagementService.getUsers({
-      role: role as string,
-      isActive: isActive === 'true' ? true : isActive === 'false' ? false : undefined,
-      search: search as string,
-      page: page ? parseInt(page as string) : 1,
-      limit: limit ? parseInt(limit as string) : 20
-    });
-
-    res.json({
-      success: true,
-      data: result
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// POST /api/admin/users - Create new user
-router.post('/users', authenticateToken, requireAdmin, async (req: any, res: any) => {
-  try {
-    const validatedData = createUserSchema.parse(req.body);
-    
-    const newUser = await userManagementService.createUser(
-      req.user.userId,
-      validatedData
-    );
-
-    res.status(201).json({
-      success: true,
-      message: 'User created successfully',
-      data: newUser
-    });
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid input data',
-        details: error.errors
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// PUT /api/admin/users/:id - Update user
-router.put('/users/:id', authenticateToken, requireAdmin, async (req: any, res: any) => {
-  try {
-    const userId = parseInt(req.params.id);
-    const validatedData = updateUserSchema.parse(req.body);
-    
-    const updatedUser = await userManagementService.updateUser(
-      req.user.userId,
-      userId,
-      validatedData
-    );
-
-    res.json({
-      success: true,
-      message: 'User updated successfully',
-      data: updatedUser
-    });
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid input data',
-        details: error.errors
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// PATCH /api/admin/users/:id/status - Toggle user active status
-router.patch('/users/:id/status', authenticateToken, requireAdmin, async (req: any, res: any) => {
-  try {
-    const userId = parseInt(req.params.id);
-    const { isActive } = req.body;
-    
-    if (typeof isActive !== 'boolean') {
-      return res.status(400).json({
-        success: false,
-        error: 'isActive must be a boolean'
-      });
-    }
-
-    const updatedUser = await userManagementService.toggleUserStatus(
-      req.user.userId,
-      userId,
-      isActive
-    );
-
-    res.json({
-      success: true,
-      message: `User ${isActive ? 'activated' : 'suspended'} successfully`,
-      data: updatedUser
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// POST /api/admin/users/:id/reset-password - Reset user password
-router.post('/users/:id/reset-password', authenticateToken, requireAdmin, async (req: any, res: any) => {
-  try {
-    const userId = parseInt(req.params.id);
-    const { newPassword } = resetPasswordSchema.parse(req.body);
-    
-    const result = await userManagementService.resetUserPassword(
-      req.user.userId,
-      userId,
-      newPassword
-    );
-
-    res.json({
-      success: true,
-      message: result.message
-    });
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid input data',
-        details: error.errors
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// DELETE /api/admin/users/:id - Delete user (soft delete)
-router.delete('/users/:id', authenticateToken, requireAdmin, async (req: any, res: any) => {
-  try {
-    const userId = parseInt(req.params.id);
-    
-    const result = await userManagementService.deleteUser(
-      req.user.userId,
-      userId
-    );
-
-    res.json({
-      success: true,
-      message: result.message
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-/**
- * AUTO ASSIGN MANAGEMENT ROUTES
- */
-
-// GET /api/admin/auto-assign/stats - Get assignment statistics
-router.get('/auto-assign/stats', authenticateToken, requireAdmin, async (req: any, res: any) => {
-  try {
-    const stats = await autoAssignService.getAssignmentStats();
-    
-    res.json({
-      success: true,
-      data: stats
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// POST /api/admin/tickets/:id/assign - Manual ticket assignment
-router.post('/tickets/:id/assign', authenticateToken, requireAdmin, async (req: any, res: any) => {
-  try {
-    const ticketId = parseInt(req.params.id);
-    const { assignToUserId } = req.body;
-    
-    if (!assignToUserId) {
-      return res.status(400).json({
-        success: false,
-        error: 'assignToUserId is required'
-      });
-    }
-
-    const success = await autoAssignService.manualAssignTicket(
-      ticketId,
-      assignToUserId,
-      req.user.userId
-    );
-
-    if (success) {
-      res.json({
-        success: true,
-        message: 'Ticket assigned successfully'
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        error: 'Failed to assign ticket'
-      });
-    }
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// GET /api/admin/auto-assign/requests - Get auto assign requests
-router.get('/auto-assign/requests', authenticateToken, requireAdmin, async (req: any, res: any) => {
-  try {
-    const { status, page = 1, limit = 20 } = req.query;
-    const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
-
-    const whereClause: any = {};
-    if (status) whereClause.status = status;
-
-    const [requests, total] = await Promise.all([
-      prisma.autoAssignRequest.findMany({
-        where: whereClause,
-        include: {
-          user: {
-            select: {
-              id: true,
-              username: true,
-              fullName: true,
-              role: true
-            }
-          },
-          approver: {
-            select: {
-              id: true,
-              username: true,
-              fullName: true
-            }
-          }
-        },
-        skip,
-        take: parseInt(limit as string),
-        orderBy: { createdAt: 'desc' }
-      }),
-      prisma.autoAssignRequest.count({ where: whereClause })
+    const [totalUsers, supportUsers, activeTickets] = await Promise.all([
+      prisma.user.count(),
+      prisma.user.count({ where: { role: 'support' } }),
+      prisma.ticket.count({ where: { status: { not: 'เสร็จสิ้น' } } })
     ]);
 
-    res.json({
-      success: true,
+    const stats = {
+      totalUsers,
+      supportUsersWithAutoAssign: supportUsers, // สมมติว่าทุก support user มี auto assign
+      totalSupportUsers: supportUsers,
+      pendingRequests: 0, // ยังไม่มีระบบ pending requests
+      activeTickets
+    };
+
+    res.json(stats);
+  } catch (error) {
+    console.error('Error fetching admin stats:', error);
+    res.status(500).json({ message: 'Failed to fetch admin statistics' });
+  }
+});
+
+// GET all users for admin dashboard
+router.get('/users', async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+    // Exclude password hash from the response
+    res.json(users.map(u => {
+        const { passwordHash, ...userWithoutPassword } = u;
+        return userWithoutPassword;
+    }));
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ message: 'Failed to fetch users' });
+  }
+});
+
+// POST - Create a new user
+router.post('/users', async (req, res) => {
+  const { username, password, fullName, email, role } = req.body;
+
+  if (!username || !password || !fullName || !email || !role) {
+    return res.status(400).json({ message: 'Missing required fields' });
+  }
+
+  if (!Object.values(UserRole).includes(role)) {
+      return res.status(400).json({ message: 'Invalid role specified' });
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = await prisma.user.create({
       data: {
-        requests,
-        pagination: {
-          total,
-          page: parseInt(page as string),
-          limit: parseInt(limit as string),
-          totalPages: Math.ceil(total / parseInt(limit as string))
-        }
-      }
+        username,
+        passwordHash: hashedPassword,
+        fullName,
+        email,
+        role: role as UserRole,
+        isActive: true,
+      },
     });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// POST /api/admin/auto-assign/requests/:id/process - Approve/Reject auto assign request
-router.post('/auto-assign/requests/:id/process', authenticateToken, requireAdmin, async (req: any, res: any) => {
-  try {
-    const requestId = parseInt(req.params.id);
-    const { action, adminNotes } = req.body;
-    
-    if (!['approved', 'rejected'].includes(action)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Action must be either "approved" or "rejected"'
-      });
+    const { passwordHash: _, ...userWithoutPassword } = newUser;
+    res.status(201).json(userWithoutPassword);
+  } catch (error) {
+    console.error('Error creating user:', error);
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        return res.status(409).json({ message: `User with that ${error.meta?.target} already exists.` });
     }
-
-    const success = await autoAssignService.processAutoAssignRequest(
-      requestId,
-      req.user.userId,
-      action,
-      adminNotes
-    );
-
-    if (success) {
-      res.json({
-        success: true,
-        message: `Request ${action} successfully`
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        error: 'Failed to process request'
-      });
-    }
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    res.status(500).json({ message: 'Failed to create user' });
   }
 });
 
-/**
- * ACTIVITY LOGS & STATISTICS
- */
+// PUT - Update a user's details
+router.put('/users/:id', async (req, res) => {
+  const { id } = req.params;
+  const { fullName, email, role, isActive } = req.body;
 
-// GET /api/admin/activity-logs - Get user activity logs
-router.get('/activity-logs', authenticateToken, requireAdmin, async (req: any, res: any) => {
-  try {
-    const { userId, adminId, action, targetType, page, limit } = req.query;
-    
-    const result = await userManagementService.getUserActivityLogs({
-      userId: userId ? parseInt(userId as string) : undefined,
-      adminId: adminId ? parseInt(adminId as string) : undefined,
-      action: action as string,
-      targetType: targetType as string,
-      page: page ? parseInt(page as string) : 1,
-      limit: limit ? parseInt(limit as string) : 50
-    });
-
-    res.json({
-      success: true,
-      data: result
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+  if (role && !Object.values(UserRole).includes(role)) {
+      return res.status(400).json({ message: 'Invalid role specified' });
   }
-});
 
-// GET /api/admin/stats - Get admin dashboard statistics
-router.get('/stats', authenticateToken, requireAdmin, async (req: any, res: any) => {
   try {
-    const userStats = await userManagementService.getUserStats();
-    const assignmentStats = await autoAssignService.getAssignmentStats();
-    
-    // Get pending auto assign requests count
-    const pendingRequests = await prisma.autoAssignRequest.count({
-      where: { status: 'pending' }
-    });
-
-    res.json({
-      success: true,
+    const updatedUser = await prisma.user.update({
+      where: { id: parseInt(id, 10) },
       data: {
-        users: userStats,
-        assignments: assignmentStats,
-        pendingRequests
-      }
+        fullName,
+        email,
+        role: role as UserRole,
+        isActive,
+      },
     });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    const { passwordHash, ...userWithoutPassword } = updatedUser;
+    res.json(userWithoutPassword);
+  } catch (error) {
+    console.error(`Error updating user ${id}:`, error);
+    res.status(500).json({ message: 'Failed to update user' });
   }
 });
 
-export { router as adminRoutes };
+// DELETE (Soft) - Deactivate a user
+router.delete('/users/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const deactivatedUser = await prisma.user.update({
+            where: { id: parseInt(id, 10) },
+            data: { isActive: false },
+        });
+        const { passwordHash, ...userWithoutPassword } = deactivatedUser;
+        res.json(userWithoutPassword);
+    } catch (error) {
+        console.error(`Error deactivating user ${id}:`, error);
+        res.status(500).json({ message: 'Failed to deactivate user' });
+    }
+});
+
+
+export default router;

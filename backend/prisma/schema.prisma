@@ -55,7 +55,7 @@ model Ticket {
   problemDescription String             @map("problem_description")
   fullName           String             @map("full_name") @db.VarChar(100)
   phoneNumber        String             @map("phone_number") @db.VarChar(15)
-  department         String             @db.VarChar(10)
+  department         String             @db.VarChar(100)
   division           String             @db.VarChar(100)
   assetNumber        String?            @map("asset_number") @db.VarChar(50)
   status             String             @default("รอดำเนินการ") @db.VarChar(30)

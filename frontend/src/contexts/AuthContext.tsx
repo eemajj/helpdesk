@@ -45,9 +45,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     console.log('🔧 AuthContext Setup: Using proxy to backend');
     
     const storedToken = localStorage.getItem('accessToken');
-    if (storedToken) {
-      setToken(storedToken);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+    const storedUser = localStorage.getItem('user');
+    
+    if (storedToken && storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setToken(storedToken);
+        setUser(userData);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+        console.log('🔄 Restored user session:', userData.username);
+      } catch (error) {
+        console.error('❌ Error parsing stored user data:', error);
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+      }
     }
     setLoading(false);
   }, []);
@@ -72,6 +84,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setToken(accessToken);
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
+      localStorage.setItem('user', JSON.stringify(userData));
       
       axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
     } catch (error: any) {
@@ -89,6 +102,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setToken(null);
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
     delete axios.defaults.headers.common['Authorization'];
   };
 

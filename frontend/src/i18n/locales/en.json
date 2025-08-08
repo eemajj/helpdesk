@@ -11,6 +11,7 @@
     "search": "Advanced Search",
     "login": "Login",
     "dashboard": "Dashboard",
+    "admin": "Admin Panel",
     "logout": "Logout",
     "skipToContent": "Skip to main content"
   },
@@ -242,7 +243,26 @@
         "reports": "Reports and analytics",
         "exportPDF": "Export PDF data"
       }
-    }
+    },
+    "tabs": {
+      "all": "All",
+      "pending": "Pending",
+      "inProgress": "In Progress",
+      "completed": "Completed",
+      "unassigned": "Unassigned"
+    },
+    "ticketStatus": {
+      "รอดำเนินการ": "Pending",
+      "กำลังดำเนินการ": "In Progress",
+      "รอข้อมูลเพิ่มเติม": "Waiting for Info",
+      "เสร็จสิ้น": "Completed",
+      "ยกเลิก": "Cancelled"
+    },
+    "myTickets": "My Tickets",
+    "noTicketsInThisCategory": "No tickets in this category",
+    "noUnassignedTickets": "No unassigned tickets",
+    "notifications": "Notifications",
+    "noNewNotifications": "No new notifications"
   },
   "common": {
     "loading": "Loading...",
@@ -260,7 +280,20 @@
     "filter": "Filter",
     "export": "Export",
     "import": "Import",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "user": "User",
+    "role": {
+      "user": "User",
+      "support": "Support",
+      "admin": "Admin"
+    },
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "createdAt": "Created At",
+    "actions": "Actions",
+    "createUser": "Create User",
+    "accept": "Accept"
   },
   "footer": {
     "copyright": "© 2025 Department of Women's Affairs and Family Development - Helpdesk System"

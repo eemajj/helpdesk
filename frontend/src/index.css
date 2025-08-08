@@ -5,10 +5,21 @@
 @layer base {
   html {
     font-family: 'Inter', 'Noto Sans Thai', system-ui, sans-serif;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    scroll-behavior: smooth;
   }
   
   body {
     @apply antialiased;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Thai font optimization */
+  :lang(th) {
+    font-family: 'Noto Sans Thai', 'Inter', system-ui, sans-serif;
+    line-height: 1.6;
   }
   
   /* Focus styles for accessibility */
@@ -85,6 +96,28 @@
   @apply bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600;
 }
 
+/* Enhanced dark mode for new components */
+.dark .card-modern {
+  @apply bg-gray-800/90 border-gray-700/50;
+}
+
+.dark .input-modern {
+  @apply bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400;
+}
+
+/* Prevent duplicate navbar/footer issues */
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+/* Ensure single layout structure */
+#root > div {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
 /* Animation utilities */
 @layer utilities {
   .animate-fade-in {
@@ -93,6 +126,94 @@
   
   .animate-slide-up {
     animation: slideUp 0.3s ease-out;
+  }
+  
+  .animate-pulse-soft {
+    animation: pulseSoft 2s ease-in-out infinite;
+  }
+  
+  .animate-bounce-gentle {
+    animation: bounceGentle 2s ease-in-out infinite;
+  }
+  
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  /* Text utilities */
+  .text-ellipsis-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .text-ellipsis-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  /* Better text rendering for Thai */
+  .thai-text {
+    font-family: 'Noto Sans Thai', system-ui, sans-serif;
+    line-height: 1.6;
+    letter-spacing: 0.01em;
+  }
+  
+  /* Navigation text optimization */
+  .nav-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 12rem;
+  }
+  
+  @media (max-width: 768px) {
+    .nav-text {
+      max-width: 8rem;
+    }
+  }
+  
+  @media (max-width: 640px) {
+    .nav-text {
+      max-width: 6rem;
+    }
+  }
+  
+  /* Mobile-first responsive containers */
+  .container-responsive {
+    @apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  /* Better button sizing on mobile */
+  .btn-mobile {
+    @apply w-full sm:w-auto px-6 py-3 text-base font-medium rounded-xl;
+  }
+  
+  /* Improved form inputs */
+  .input-modern {
+    @apply w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-600 rounded-xl;
+    @apply focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200;
+    @apply text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400;
+  }
+  
+  /* Card improvements */
+  .card-modern {
+    @apply bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-2xl lg:rounded-3xl;
+    @apply shadow-xl border border-gray-200/50 dark:border-gray-700/50;
+  }
+  
+  /* Gradient text utility */
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-600 to-primary-800 dark:from-primary-400 dark:to-primary-200 bg-clip-text text-transparent;
   }
 }
 
@@ -113,5 +234,32 @@
   to {
     transform: translateY(0);
     opacity: 1;
+  }
+}
+
+@keyframes pulseSoft {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes bounceGentle {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
   }
 }
