@@ -1,0 +1,814 @@
+openapi: 3.0.0
+info:
+  title: DWF Helpdesk API
+  description: |
+    # DWF Helpdesk System API
+    
+    ระบบ Helpdesk สำหรับกรมกิจการสตรีและสถาบันครอบครัว (DWF)
+    
+    ## 🎯 Overview
+    This API provides endpoints for managing support tickets, user authentication, and administrative functions for the DWF Helpdesk System.
+    
+    ## 🔐 Authentication
+    Most endpoints require JWT authentication. Include the token in the Authorization header:
+    `Authorization: Bearer <your_access_token>`
+    
+    ## 📊 Response Format
+    All API responses follow this standard format:
+    ```json
+    {
+      "success": boolean,
+      "message": "string (optional)",
+      "data": "object/array (optional)",
+      "error": "string (optional, when success is false)"
+    }
+    ```
+  version: 1.0.0
+  contact:
+    name: DWF IT Support
+    email: support@dwf.go.th
+
+servers:
+  - url: http://localhost:3001/api
+    description: Development Server (Local)
+  - url: http://localhost:3002/api
+    description: Development Server (Docker)
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT Authorization header using the Bearer scheme
+
+  schemas:
+    # User Schemas
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        username:
+          type: string
+          example: admin
+        fullName:
+          type: string
+          example: ผู้ดูแลระบบ
+        email:
+          type: string
+          format: email
+          example: admin@dwf.go.th
+        role:
+          type: string
+          enum: [admin, support, user]
+          example: admin
+        isActive:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+        lastLogin:
+          type: string
+          format: date-time
+
+    # Authentication Schemas
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: ชื่อผู้ใช้
+          example: admin
+        password:
+          type: string
+          description: รหัสผ่าน
+          example: admin123
+
+    LoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: เข้าสู่ระบบสำเร็จ
+        user:
+          $ref: '#/components/schemas/User'
+        accessToken:
+          type: string
+          description: JWT access token (expires in 1 hour)
+        refreshToken:
+          type: string
+          description: JWT refresh token (expires in 7 days)
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+          description: Refresh token for getting new access token
+
+    # Ticket Schemas
+    Ticket:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        ticketId:
+          type: string
+          example: TK1699234567890
+        problemType:
+          type: string
+          example: ฮาร์ดแวร์
+        problemDescription:
+          type: string
+          example: คอมพิวเตอร์เปิดไม่ติด
+        fullName:
+          type: string
+          example: นายสมชาย ใจดี
+        phoneNumber:
+          type: string
+          example: 0812345678
+        department:
+          type: string
+          example: กลุ่มงานเทคโนโลยี
+        division:
+          type: string
+          example: ฝ่ายพัฒนาระบบ
+        assetNumber:
+          type: string
+          example: DWF-PC-001
+        status:
+          type: string
+          example: รอดำเนินการ
+        priority:
+          type: string
+          example: ปกติ
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        assignedTo:
+          type: object
+          properties:
+            id:
+              type: integer
+            fullName:
+              type: string
+
+    CreateTicketRequest:
+      type: object
+      required:
+        - problemType
+        - problemDescription
+        - fullName
+        - phoneNumber
+        - department
+      properties:
+        problemType:
+          type: string
+          description: ประเภทของปัญหา
+          example: ฮาร์ดแวร์
+        otherProblemType:
+          type: string
+          description: ประเภทปัญหาอื่นๆ (ถ้าเลือก "อื่นๆ")
+        problemDescription:
+          type: string
+          description: รายละเอียดปัญหา
+          example: คอมพิวเตอร์เปิดไม่ติด
+        fullName:
+          type: string
+          description: ชื่อ-นามสกุล
+          example: นายสมชาย ใจดี
+        phoneNumber:
+          type: string
+          description: เบอร์โทรศัพท์
+          example: 0812345678
+        department:
+          type: string
+          description: กอง/กลุ่ม
+          example: กลุ่มงานเทคโนโลยี
+        division:
+          type: string
+          description: กลุ่ม/ฝ่าย
+          example: ฝ่ายพัฒนาระบบ
+        assetNumber:
+          type: string
+          description: เลขครุภัณฑ์
+          example: DWF-PC-001
+
+    TicketResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: สร้าง ticket เรียบร้อย
+        ticket:
+          $ref: '#/components/schemas/Ticket'
+
+    UpdateTicketStatusRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          description: สถานะใหม่
+          example: กำลังดำเนินการ
+        comment:
+          type: string
+          description: ความคิดเห็น
+          example: เริ่มตรวจสอบปัญหา
+
+    # Dashboard Schemas
+    DashboardStats:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        stats:
+          type: object
+          properties:
+            total:
+              type: integer
+              description: จำนวน tickets ทั้งหมด
+              example: 150
+            pending:
+              type: integer
+              description: จำนวน tickets ที่รอดำเนินการ
+              example: 25
+            inProgress:
+              type: integer
+              description: จำนวน tickets ที่กำลังดำเนินการ
+              example: 45
+            completed:
+              type: integer
+              description: จำนวน tickets ที่เสร็จสิ้นแล้ว
+              example: 80
+            totalUsers:
+              type: integer
+              description: จำนวนผู้ใช้ทั้งหมด
+              example: 50
+
+    # Category & Priority Schemas
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: ฮาร์ดแวร์
+        description:
+          type: string
+          example: ปัญหาเกี่ยวกับฮาร์ดแวร์คอมพิวเตอร์
+
+    Priority:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: วิกฤต
+        level:
+          type: integer
+          example: 8
+        description:
+          type: string
+          example: ต้องแก้ไขทันที (1 ชั่วโมง)
+        sla:
+          type: integer
+          example: 1
+
+    # Response Schemas
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: Error message
+        details:
+          type: array
+          items:
+            type: object
+
+    Success:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Operation completed successfully
+
+    Pagination:
+      type: object
+      properties:
+        current:
+          type: integer
+          example: 1
+        total:
+          type: integer
+          example: 5
+        limit:
+          type: integer
+          example: 20
+        count:
+          type: integer
+          example: 85
+
+  tags:
+    - name: Authentication
+      description: 🔐 User authentication and authorization endpoints
+    - name: Tickets
+      description: 🎫 Ticket management and tracking endpoints
+    - name: Dashboard
+      description: 📊 Dashboard statistics and analytics endpoints
+    - name: Users
+      description: 👥 User management endpoints
+    - name: Admin
+      description: 🔧 Administrative endpoints
+    - name: System
+      description: ⚙️ System health and configuration endpoints
+
+paths:
+  # Authentication Endpoints
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: เข้าสู่ระบบด้วย username และ password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: เข้าสู่ระบบสำเร็จ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: ข้อมูลการเข้าสู่ระบบไม่ถูกต้อง
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: เกิน rate limit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: ขอ access token ใหม่ด้วย refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Refresh token สำเร็จ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Refresh token ไม่ถูกต้องหรือหมดอายุ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: User logout
+      description: ออกจากระบบและ blacklist token
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: ออกจากระบบสำเร็จ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '401':
+          description: Token ไม่ถูกต้อง
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # Ticket Endpoints
+  /tickets:
+    post:
+      tags:
+        - Tickets
+      summary: Create new ticket
+      description: สร้าง ticket ใหม่ (ไม่ต้อง authentication)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTicketRequest'
+          multipart/form-data:
+            schema:
+              type: object
+              allOf:
+                - $ref: '#/components/schemas/CreateTicketRequest'
+                - type: object
+                  properties:
+                    attachments:
+                      type: array
+                      items:
+                        type: string
+                        format: binary
+                      description: ไฟล์แนบ (สูงสุด 5 ไฟล์, 10MB ต่อไฟล์)
+      responses:
+        '201':
+          description: สร้าง ticket สำเร็จ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketResponse'
+        '400':
+          description: ข้อมูลไม่ถูกต้อง
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: เกิน rate limit (3 tickets ต่อชั่วโมง)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tickets/search:
+    get:
+      tags:
+        - Tickets
+      summary: Search tickets
+      description: ค้นหา tickets ด้วยเงื่อนไขต่างๆ (ต้อง authentication)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: คำค้นหา
+        - name: status
+          in: query
+          schema:
+            type: string
+          description: สถานะ ticket
+        - name: priority
+          in: query
+          schema:
+            type: string
+          description: ระดับความสำคัญ
+        - name: problem_type
+          in: query
+          schema:
+            type: string
+          description: ประเภทปัญหา
+        - name: department
+          in: query
+          schema:
+            type: string
+          description: หน่วยงาน
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+          description: วันที่เริ่มต้น
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+          description: วันที่สิ้นสุด
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: หน้าที่ต้องการ
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+          description: จำนวนรายการต่อหน้า
+        - name: export
+          in: query
+          schema:
+            type: string
+            enum: [csv]
+          description: ส่งออกเป็น CSV
+      responses:
+        '200':
+          description: ค้นหาสำเร็จ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  tickets:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Ticket'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+            text/csv:
+              schema:
+                type: string
+                description: CSV file when export=csv
+        '401':
+          description: ไม่ได้รับอนุญาต
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tickets/track/{ticketId}:
+    get:
+      tags:
+        - Tickets
+      summary: Track ticket status
+      description: ติดตามสถานะ ticket (ไม่ต้อง authentication)
+      parameters:
+        - name: ticketId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: รหัส ticket
+          example: TK1699234567890
+      responses:
+        '200':
+          description: พบ ticket
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  ticket:
+                    $ref: '#/components/schemas/Ticket'
+        '404':
+          description: ไม่พบ ticket
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tickets/{id}/status:
+    put:
+      tags:
+        - Tickets
+      summary: Update ticket status
+      description: อัปเดตสถานะ ticket (ต้อง authentication, Support+)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID ของ ticket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTicketStatusRequest'
+      responses:
+        '200':
+          description: อัปเดตสถานะสำเร็จ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '401':
+          description: ไม่ได้รับอนุญาต
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: ไม่พบ ticket
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tickets/categories:
+    get:
+      tags:
+        - Tickets
+      summary: Get problem categories
+      description: ดึงรายการหมวดหมู่ปัญหา
+      responses:
+        '200':
+          description: รายการหมวดหมู่
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  categories:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Category'
+
+  /tickets/priorities:
+    get:
+      tags:
+        - Tickets
+      summary: Get priority levels
+      description: ดึงรายการระดับความสำคัญ
+      responses:
+        '200':
+          description: รายการระดับความสำคัญ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  priorities:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Priority'
+
+  # Dashboard Endpoints
+  /dashboard/stats:
+    get:
+      tags:
+        - Dashboard
+      summary: Get dashboard statistics
+      description: ดึงข้อมูลสถิติสำหรับหน้า dashboard (Support+ only)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: สถิติ dashboard
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardStats'
+        '401':
+          description: ไม่ได้รับอนุญาต
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /dashboard/tickets:
+    get:
+      tags:
+        - Dashboard
+      summary: Get recent tickets
+      description: ดึงรายการ tickets ล่าสุดสำหรับ dashboard (Support+ only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 100
+          description: จำนวน tickets ที่ต้องการ
+      responses:
+        '200':
+          description: รายการ tickets ล่าสุด
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  tickets:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Ticket'
+        '401':
+          description: ไม่ได้รับอนุญาต
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # System Endpoints
+  /status:
+    get:
+      tags:
+        - System
+      summary: System status check
+      description: ตรวจสอบสถานะระบบ
+      responses:
+        '200':
+          description: สถานะระบบ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  timestamp:
+                    type: string
+                    format: date-time
+                  uptime:
+                    type: number
+                    example: 12345
+                  version:
+                    type: string
+                    example: 1.0.0
+
+  /status/health:
+    get:
+      tags:
+        - System
+      summary: Detailed health check
+      description: ตรวจสอบสุขภาพระบบแบบละเอียด
+      responses:
+        '200':
+          description: ข้อมูลสุขภาพระบบ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  services:
+                    type: object
+                    properties:
+                      database:
+                        type: string
+                        example: connected
+                      cache:
+                        type: string
+                        example: active
+                      websocket:
+                        type: string
+                        example: running

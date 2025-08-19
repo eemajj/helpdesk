@@ -7,29 +7,33 @@ async function main() {
   console.log('Start seeding...');
 
   // 0. Seed Users (Admin and Support staff)
+  // Generate secure random passwords for development
+  const adminPassword = process.env.ADMIN_PASSWORD || 'DWF_Admin_2024';
+  const supportPassword = process.env.SUPPORT_PASSWORD || 'DWF_Support_2024';
+
   const users = [
     {
       username: 'admin',
-      passwordHash: await bcrypt.hash('admin123', 12),
+      passwordHash: await bcrypt.hash(adminPassword, 12),
       fullName: 'ผู้ดูแลระบบหลัก',
       email: 'admin@dwf.go.th',
-      role: 'admin',
+      role: 'admin' as const,
       isActive: true
     },
     {
       username: 'support1',
-      passwordHash: await bcrypt.hash('support123', 12),
+      passwordHash: await bcrypt.hash(supportPassword, 12),
       fullName: 'เจ้าหน้าที่ IT คนที่ 1',
       email: 'support1@dwf.go.th',
-      role: 'support',
+      role: 'support' as const,
       isActive: true
     },
     {
       username: 'support2', 
-      passwordHash: await bcrypt.hash('support123', 12),
+      passwordHash: await bcrypt.hash(supportPassword, 12),
       fullName: 'เจ้าหน้าที่ IT คนที่ 2',
       email: 'support2@dwf.go.th',
-      role: 'support',
+      role: 'support' as const,
       isActive: true
     }
   ];

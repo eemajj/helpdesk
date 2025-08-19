@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { SearchIcon, FilterIcon, XIcon, CalendarIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface SearchFilters {
   keyword: string;
@@ -20,6 +21,7 @@ interface Props {
 }
 
 const AdvancedSearch: React.FC<Props> = ({ onSearch, onReset, loading, results }) => {
+  const { t } = useTranslation();
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [filters, setFilters] = useState<SearchFilters>({
     keyword: '',
@@ -47,12 +49,17 @@ const AdvancedSearch: React.FC<Props> = ({ onSearch, onReset, loading, results }
   ];
 
   const problemTypeOptions = [
-    { value: 'คอมพิวเตอร์', label: 'คอมพิวเตอร์' },
-    { value: 'อินเทอร์เน็ต', label: 'อินเทอร์เน็ต' },
-    { value: 'ปริ้นเตอร์', label: 'ปริ้นเตอร์' },
-    { value: 'ระบบสารสนเทศ', label: 'ระบบสารสนเทศ' },
-    { value: 'ติดตั้ง', label: 'ติดตั้ง' },
-    { value: 'อื่น ๆ', label: 'อื่น ๆ' }
+    { value: 'ฮาร์ดแวร์', label: 'ฮาร์ดแวร์' },
+    { value: 'ซอฟต์แวร์', label: 'ซอฟต์แวร์' },
+    { value: 'เครือข่าย', label: 'เครือข่าย' },
+    { value: 'เครื่องพิมพ์', label: 'เครื่องพิมพ์' },
+    { value: 'โทรศัพท์', label: 'โทรศัพท์' },
+    { value: 'อีเมล', label: 'อีเมล' },
+    { value: 'ระบบงาน', label: 'ระบบงาน' },
+    { value: 'ไวรัส', label: 'ไวรัส' },
+    { value: 'สำรองข้อมูล', label: 'สำรองข้อมูล' },
+    { value: 'การอบรม', label: 'การอบรม' },
+    { value: 'อื่นๆ', label: 'อื่นๆ' }
   ];
 
   const departmentOptions = [
@@ -101,7 +108,7 @@ const AdvancedSearch: React.FC<Props> = ({ onSearch, onReset, loading, results }
               <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <input
                 type="text"
-                placeholder="ค้นหา tickets (รหัส, ชื่อผู้แจ้ง, คำอธิบาย...)"
+                placeholder={t('search.searchPlaceholder')}
                 value={filters.keyword}
                 onChange={(e) => handleFilterChange('keyword', e.target.value)}
                 className="pl-10 pr-4 py-3 w-full border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -119,20 +126,20 @@ const AdvancedSearch: React.FC<Props> = ({ onSearch, onReset, loading, results }
             }`}
           >
             <FilterIcon className="h-5 w-5" />
-            <span className="hidden md:inline">กรองขั้นสูง</span>
+            <span className="hidden md:inline">{t('search.advancedFilters.title')}</span>
           </button>
 
           <button
             onClick={handleSearch}
             disabled={loading}
-            className="px-6 py-3 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white rounded-lg transition-colors flex items-center space-x-2"
+            className="px-6 py-3 bg-gradient-to-r from-primary-400 to-primary-500 hover:from-primary-500 hover:to-primary-600 disabled:opacity-50 text-white rounded-lg transition-all duration-300 shadow-md hover:shadow-lg flex items-center space-x-2"
           >
             {loading ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
             ) : (
               <SearchIcon className="h-5 w-5" />
             )}
-            <span className="hidden md:inline">ค้นหา</span>
+            <span className="hidden md:inline">{t('search.advancedFilters.searchButton')}</span>
           </button>
         </div>
 
@@ -143,14 +150,14 @@ const AdvancedSearch: React.FC<Props> = ({ onSearch, onReset, loading, results }
               {/* Status Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  สถานะ
+                  {t('search.advancedFilters.status')}
                 </label>
                 <select
                   value={filters.status}
                   onChange={(e) => handleFilterChange('status', e.target.value)}
                   className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
                 >
-                  <option value="">ทุกสถานะ</option>
+                  <option value="">{t('search.advancedFilters.allStatus')}</option>
                   {statusOptions.map(option => (
                     <option key={option.value} value={option.value}>
                       {option.label}
@@ -162,14 +169,14 @@ const AdvancedSearch: React.FC<Props> = ({ onSearch, onReset, loading, results }
               {/* Priority Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  ความสำคัญ
+                  {t('search.advancedFilters.priority')}
                 </label>
                 <select
                   value={filters.priority}
                   onChange={(e) => handleFilterChange('priority', e.target.value)}
                   className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
                 >
-                  <option value="">ทุกระดับ</option>
+                  <option value="">{t('search.advancedFilters.allPriority')}</option>
                   {priorityOptions.map(option => (
                     <option key={option.value} value={option.value}>
                       {option.label}
@@ -181,14 +188,14 @@ const AdvancedSearch: React.FC<Props> = ({ onSearch, onReset, loading, results }
               {/* Problem Type Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  ประเภทปัญหา
+                  {t('search.advancedFilters.problemType')}
                 </label>
                 <select
                   value={filters.problemType}
                   onChange={(e) => handleFilterChange('problemType', e.target.value)}
                   className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
                 >
-                  <option value="">ทุกประเภท</option>
+                  <option value="">{t('search.advancedFilters.allProblemType')}</option>
                   {problemTypeOptions.map(option => (
                     <option key={option.value} value={option.value}>
                       {option.label}
@@ -200,14 +207,14 @@ const AdvancedSearch: React.FC<Props> = ({ onSearch, onReset, loading, results }
               {/* Department Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  หน่วยงาน
+                  {t('search.advancedFilters.department')}
                 </label>
                 <select
                   value={filters.department}
                   onChange={(e) => handleFilterChange('department', e.target.value)}
                   className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
                 >
-                  <option value="">ทุกหน่วยงาน</option>
+                  <option value="">{t('search.advancedFilters.allDepartment')}</option>
                   {departmentOptions.map(option => (
                     <option key={option.value} value={option.value}>
                       {option.label}
@@ -219,7 +226,7 @@ const AdvancedSearch: React.FC<Props> = ({ onSearch, onReset, loading, results }
               {/* Date From */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  วันที่เริ่มต้น
+                  {t('search.advancedFilters.dateFrom')}
                 </label>
                 <div className="relative">
                   <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -235,7 +242,7 @@ const AdvancedSearch: React.FC<Props> = ({ onSearch, onReset, loading, results }
               {/* Date To */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  วันที่สิ้นสุด
+                  {t('search.advancedFilters.dateTo')}
                 </label>
                 <div className="relative">
                   <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -253,7 +260,7 @@ const AdvancedSearch: React.FC<Props> = ({ onSearch, onReset, loading, results }
             <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <div className="text-sm text-gray-600 dark:text-gray-400">
                 {results !== undefined && (
-                  <span>พบ {results.toLocaleString()} รายการ</span>
+                  <span>{t('search.advancedFilters.foundResults', { count: results })}</span>
                 )}
               </div>
               
@@ -264,16 +271,16 @@ const AdvancedSearch: React.FC<Props> = ({ onSearch, onReset, loading, results }
                     className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center space-x-2"
                   >
                     <XIcon className="h-4 w-4" />
-                    <span>ล้างตัวกรอง</span>
+                    <span>{t('search.advancedFilters.resetButton')}</span>
                   </button>
                 )}
                 
                 <button
                   onClick={handleSearch}
                   disabled={loading}
-                  className="px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white rounded-lg transition-colors"
+                  className="px-4 py-2 bg-gradient-to-r from-primary-400 to-primary-500 hover:from-primary-500 hover:to-primary-600 disabled:opacity-50 text-white rounded-lg transition-all duration-300 shadow-md hover:shadow-lg"
                 >
-                  ค้นหา
+                  {t('search.advancedFilters.searchButton')}
                 </button>
               </div>
             </div>
@@ -285,32 +292,32 @@ const AdvancedSearch: React.FC<Props> = ({ onSearch, onReset, loading, results }
           <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
             {filters.keyword && (
               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200">
-                คำค้นหา: "{filters.keyword}"
+                {t('search.advancedFilters.keywordLabel')}: "{filters.keyword}"
               </span>
             )}
             {filters.status && (
               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
-                สถานะ: {filters.status}
+                {t('search.advancedFilters.statusLabel')}: {filters.status}
               </span>
             )}
             {filters.priority && (
               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">
-                ความสำคัญ: {filters.priority}
+                {t('search.advancedFilters.priorityLabel')}: {filters.priority}
               </span>
             )}
             {filters.problemType && (
               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-                ประเภท: {filters.problemType}
+                {t('search.advancedFilters.problemTypeLabel')}: {filters.problemType}
               </span>
             )}
             {filters.department && (
               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
-                หน่วยงาน: {filters.department}
+                {t('search.advancedFilters.departmentLabel')}: {filters.department}
               </span>
             )}
             {(filters.dateFrom || filters.dateTo) && (
               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200">
-                วันที่: {filters.dateFrom} - {filters.dateTo}
+                {t('search.advancedFilters.dateRangeLabel')}: {filters.dateFrom} - {filters.dateTo}
               </span>
             )}
           </div>

@@ -5,6 +5,82 @@ import { prisma } from '../db/connection'
 import { authMiddleware, requireAdmin, requireSupport } from '../middleware/auth'
 import { tokenBlacklist } from '../services/tokenBlacklist'
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     CreateUserRequest:
+ *       type: object
+ *       required:
+ *         - username
+ *         - password
+ *         - fullName
+ *         - role
+ *       properties:
+ *         username:
+ *           type: string
+ *           minLength: 3
+ *           maxLength: 50
+ *           description: ชื่อผู้ใช้
+ *           example: support1
+ *         password:
+ *           type: string
+ *           minLength: 6
+ *           description: รหัสผ่าน
+ *           example: support123
+ *         fullName:
+ *           type: string
+ *           minLength: 1
+ *           maxLength: 100
+ *           description: ชื่อ-นามสกุล
+ *           example: นายสมชาย รักดี
+ *         email:
+ *           type: string
+ *           format: email
+ *           description: อีเมล (ไม่บังคับ)
+ *           example: support1@dwf.go.th
+ *         role:
+ *           type: string
+ *           enum: [admin, support, user]
+ *           description: บทบาทของผู้ใช้
+ *           example: support
+ *     UpdateUserRequest:
+ *       type: object
+ *       properties:
+ *         fullName:
+ *           type: string
+ *           minLength: 1
+ *           maxLength: 100
+ *           description: ชื่อ-นามสกุล
+ *           example: นายสมชาย รักดีที่สุด
+ *         email:
+ *           type: string
+ *           format: email
+ *           description: อีเมล
+ *           example: support1_new@dwf.go.th
+ *         role:
+ *           type: string
+ *           enum: [admin, support, user]
+ *           description: บทบาทของผู้ใช้
+ *           example: support
+ *         isActive:
+ *           type: boolean
+ *           description: สถานะการใช้งาน
+ *           example: true
+ *     UserListResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           example: true
+ *         users:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/User'
+ *         pagination:
+ *           $ref: '#/components/schemas/Pagination'
+ */
+
 const userRoutes = Router()
 
 // Validation schemas

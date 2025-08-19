@@ -4,18 +4,23 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import axios from 'axios';
-import { Send, AlertCircle, CheckCircle, FileText, User, Building2, ArrowLeft, Loader2, Phone, Mail, MapPin, Star, Trophy, Search } from 'lucide-react';
+import { Send, AlertCircle, CheckCircle, FileText, User, Building2, Star, Search } from 'lucide-react';
 import { useLanguage } from '../hooks/useLanguage';
 import { Link } from 'react-router-dom';
 // import FileUpload from '../components/FileUpload';
 
 const ProblemType = z.enum([
-  'คอมพิวเตอร์',
-  'อินเทอร์เน็ต',
-  'ปริ้นเตอร์',
-  'ระบบสารสนเทศ',
-  'ติดตั้ง',
-  'อื่น ๆ'
+  'ฮาร์ดแวร์',
+  'ซอฟต์แวร์',
+  'เครือข่าย',
+  'เครื่องพิมพ์',
+  'โทรศัพท์',
+  'อีเมล',
+  'ระบบงาน',
+  'ไวรัส',
+  'สำรองข้อมูล',
+  'การอบรม',
+  'อื่นๆ'
 ]);
 
 const Department = z.enum([
@@ -34,10 +39,10 @@ const ticketSchema = z.object({
   otherProblemType: z.string().optional(),
   problemDescription: z.string().min(10, 'รายละเอียดปัญหาต้องมีอย่างน้อย 10 ตัวอักษร'),
   fullName: z.string().min(2, 'ชื่อ-นามสกุลต้องมีอย่างน้อย 2 ตัวอักษร'),
-  phoneNumber: z.string().regex(/^[0-9]{9,10}$/, 'เบอร์โทรศัพท์ต้องเป็นตัวเลข 9-10 หลัก'),
+  phoneNumber: z.string().min(10, 'เบอร์โทรศัพท์ต้องมีอย่างน้อย 10 หลัก'),
   department: Department,
-  division: z.string().min(1, 'กรุณาระบุกลุ่ม/ฝ่าย'),
-  assetNumber: z.string().min(1, 'กรุณาระบุหมายเลขครุภัณฑ์')
+  division: z.string().optional(),
+  assetNumber: z.string().optional()
 });
 
 type TicketFormData = z.infer<typeof ticketSchema>;
@@ -55,8 +60,10 @@ const TicketFormPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [ticketId, setTicketId] = useState<string>('');
-  const [currentStep, setCurrentStep] = useState(1);
+  // const [currentStep, setCurrentStep] = useState(1);
   const [formProgress, setFormProgress] = useState(0);
+  // const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  // const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
   // const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
 
   const {
@@ -70,6 +77,37 @@ const TicketFormPage: React.FC = () => {
   });
 
   const watchProblemType = watch('problemType');
+  const watchedFields = watch();
+
+  // Calculate form progress
+  React.useEffect(() => {
+    const requiredFields = ['problemType', 'problemDescription', 'fullName', 'phoneNumber', 'department'];
+    const filledFields = requiredFields.filter(field => {
+      const value = watchedFields[field as keyof TicketFormData];
+      return value && value.toString().trim() !== '';
+    });
+    const progress = (filledFields.length / requiredFields.length) * 100;
+    setFormProgress(progress);
+  }, [watchedFields]);
+
+  // Real-time field validation (disabled for debugging)
+  // const validateField = (fieldName: keyof TicketFormData, value: string) => {
+  //   const fieldSchema = ticketSchema.shape[fieldName];
+  //   try {
+  //     fieldSchema.parse(value);
+  //     setValidationErrors(prev => ({ ...prev, [fieldName]: '' }));
+  //     return true;
+  //   } catch (error: any) {
+  //     setValidationErrors(prev => ({ ...prev, [fieldName]: error.errors[0]?.message || 'Invalid input' }));
+  //     return false;
+  //   }
+  // };
+
+  // Handle field blur for validation (disabled for debugging)
+  // const handleFieldBlur = (fieldName: keyof TicketFormData, value: string) => {
+  //   setTouchedFields(prev => ({ ...prev, [fieldName]: true }));
+  //   validateField(fieldName, value);
+  // };
 
   // const handleFilesUploaded = (files: UploadedFile[]) => {
   //   setUploadedFiles(files);
@@ -79,7 +117,23 @@ const TicketFormPage: React.FC = () => {
   const onSubmit = async (data: TicketFormData) => {
     setIsSubmitting(true);
     try {
-      const response = await axios.post('/api/tickets', data);
+      console.log('Submitting form data:', data);
+      console.log('API URL:', process.env.REACT_APP_API_URL);
+      
+      // Clean up data to match backend expectations
+      const cleanData = {
+        problemType: data.problemType,
+        problemDescription: data.problemDescription,
+        fullName: data.fullName,
+        phoneNumber: data.phoneNumber,
+        department: data.department,
+        ...(data.otherProblemType && { otherProblemType: data.otherProblemType }),
+        ...(data.division && { division: data.division }),
+        ...(data.assetNumber && { assetNumber: data.assetNumber })
+      };
+      
+      console.log('Cleaned form data:', cleanData);
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/tickets`, cleanData);
       
       if (response.data.success) {
         const newTicketId = response.data.ticket.ticketId;
@@ -103,7 +157,15 @@ const TicketFormPage: React.FC = () => {
         // setUploadedFiles([]);
       }
     } catch (error: any) {
-      const errorMessage = error.response?.data?.error || t('messages.submitError');
+      console.error('Submit error:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      console.error('Validation details:', error.response?.data?.details);
+      
+      const errorMessage = error.response?.data?.error || 
+                          (error.response?.data?.details ? 
+                            `Validation error: ${JSON.stringify(error.response.data.details)}` : 
+                            t('messages.submitError'));
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -226,6 +288,34 @@ const TicketFormPage: React.FC = () => {
       <div className="py-8 px-4">
         <div className="max-w-4xl mx-auto">
 
+        {/* Progress Indicator */}
+        <div className="mb-8 animate-slide-up">
+          <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-2xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">ความคืบหน้าการกรอกฟอร์ม</h3>
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                {Math.round(formProgress)}% เสร็จสิ้น
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-primary-500 to-blue-500 rounded-full transition-all duration-500 ease-out relative"
+                style={{ width: `${formProgress}%` }}
+              >
+                {formProgress > 0 && (
+                  <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                )}
+              </div>
+            </div>
+            <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-2">
+              <span>เริ่มต้น</span>
+              <span>ข้อมูลปัญหา</span>
+              <span>ข้อมูลผู้แจ้ง</span>
+              <span>เสร็จสิ้น</span>
+            </div>
+          </div>
+        </div>
+
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 animate-slide-up">
           {/* ข้อมูลปัญหา - Step 1 */}
           <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-3xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
@@ -261,12 +351,17 @@ const TicketFormPage: React.FC = () => {
                   aria-describedby={errors.problemType ? 'problemType-error' : undefined}
                 >
                   <option value="">{t('ticketForm.fields.problemType.placeholder')}</option>
-                  <option value="คอมพิวเตอร์">{t('ticketForm.fields.problemType.options.computer')}</option>
-                  <option value="อินเทอร์เน็ต">{t('ticketForm.fields.problemType.options.internet')}</option>
-                  <option value="ปริ้นเตอร์">{t('ticketForm.fields.problemType.options.printer')}</option>
-                  <option value="ระบบสารสนเทศ">{t('ticketForm.fields.problemType.options.information')}</option>
-                  <option value="ติดตั้ง">{t('ticketForm.fields.problemType.options.installation')}</option>
-                  <option value="อื่น ๆ">{t('ticketForm.fields.problemType.options.others')}</option>
+                  <option value="ฮาร์ดแวร์">{t('ticketForm.categories.hardware')}</option>
+                  <option value="ซอฟต์แวร์">{t('ticketForm.categories.software')}</option>
+                  <option value="เครือข่าย">{t('ticketForm.categories.network')}</option>
+                  <option value="เครื่องพิมพ์">{t('ticketForm.categories.printer')}</option>
+                  <option value="โทรศัพท์">{t('ticketForm.categories.phone')}</option>
+                  <option value="อีเมล">{t('ticketForm.categories.email')}</option>
+                  <option value="ระบบงาน">{t('ticketForm.categories.system')}</option>
+                  <option value="ไวรัส">{t('ticketForm.categories.virus')}</option>
+                  <option value="สำรองข้อมูล">{t('ticketForm.categories.backup')}</option>
+                  <option value="การอบรม">{t('ticketForm.categories.training')}</option>
+                  <option value="อื่นๆ">{t('ticketForm.categories.others')}</option>
                 </select>
                 {errors.problemType && (
                   <p id="problemType-error" className="form-error" role="alert">
@@ -275,7 +370,7 @@ const TicketFormPage: React.FC = () => {
                 )}
               </div>
 
-              {watchProblemType === 'อื่น ๆ' && (
+              {watchProblemType === 'อื่นๆ' && (
                 <div className="animate-slide-up">
                   <label htmlFor="otherProblemType" className="form-label">
                     {t('ticketForm.fields.otherProblemType.label')}

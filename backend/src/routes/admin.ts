@@ -4,6 +4,48 @@ import { Prisma, PrismaClient, UserRole } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { authMiddleware, requireAdmin } from '../middleware/auth';
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     AdminStats:
+ *       type: object
+ *       properties:
+ *         totalUsers:
+ *           type: integer
+ *           description: จำนวนผู้ใช้ทั้งหมด
+ *           example: 25
+ *         supportUsersWithAutoAssign:
+ *           type: integer
+ *           description: จำนวน support users ที่มี auto assign
+ *           example: 5
+ *         totalSupportUsers:
+ *           type: integer
+ *           description: จำนวน support users ทั้งหมด
+ *           example: 5
+ *         pendingRequests:
+ *           type: integer
+ *           description: จำนวนคำขอที่รอการอนุมัติ
+ *           example: 0
+ *         activeTickets:
+ *           type: integer
+ *           description: จำนวน tickets ที่ยังไม่เสร็จสิ้น
+ *           example: 45
+ *     AutoAssignResult:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           example: true
+ *         message:
+ *           type: string
+ *           example: ระบบ Auto Assign ทำงานสำเร็จ
+ *         assigned:
+ *           type: integer
+ *           description: จำนวน tickets ที่ถูกมอบหมาย
+ *           example: 12
+ */
+
 const prisma = new PrismaClient();
 const router = express.Router();
 

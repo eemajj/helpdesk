@@ -1,5 +1,46 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+
+// Functional component สำหรับใช้ translation hook
+const ErrorBoundaryContent: React.FC = () => {
+  const { t } = useTranslation();
+  
+  return (
+    <>
+      <h1 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+        {t('common.error')}
+      </h1>
+      
+      <p className="text-gray-600 dark:text-gray-400 mb-6">
+        {t('errors.pageError')}
+      </p>
+    </>
+  );
+};
+
+const ErrorBoundaryButtons: React.FC<{ onReset: () => void; onReload: () => void }> = ({ onReset, onReload }) => {
+  const { t } = useTranslation();
+  
+  return (
+    <>
+      <button
+        onClick={onReset}
+        className="flex items-center justify-center px-4 py-2 bg-gradient-to-r from-primary-400 to-primary-500 text-white rounded-lg hover:from-primary-500 hover:to-primary-600 transition-all duration-300 shadow-md hover:shadow-lg"
+      >
+        <RefreshCw className="w-4 h-4 mr-2" />
+        {t('common.retry')}
+      </button>
+      
+      <button
+        onClick={onReload}
+        className="flex items-center justify-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+      >
+        {t('common.reload')}
+      </button>
+    </>
+  );
+};
 
 interface Props {
   children: ReactNode;
@@ -51,13 +92,7 @@ class ErrorBoundary extends Component<Props, State> {
               <AlertTriangle className="w-full h-full" />
             </div>
             
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              เกิดข้อผิดพลาด
-            </h1>
-            
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              เกิดข้อผิดพลาดในการแสดงผลหน้าเว็บ กรุณาลองใหม่อีกครั้ง
-            </p>
+            <ErrorBoundaryContent />
 
             {process.env.NODE_ENV === 'development' && this.state.error && (
               <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg text-left">
@@ -78,20 +113,10 @@ class ErrorBoundary extends Component<Props, State> {
             )}
             
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <button
-                onClick={this.handleReset}
-                className="flex items-center justify-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                ลองใหม่
-              </button>
-              
-              <button
-                onClick={this.handleReload}
-                className="flex items-center justify-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-              >
-                โหลดหน้าใหม่
-              </button>
+              <ErrorBoundaryButtons
+                onReset={this.handleReset}
+                onReload={this.handleReload}
+              />
             </div>
           </div>
         </div>

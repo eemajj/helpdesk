@@ -44,6 +44,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     console.log('🔧 AuthContext Setup: Using proxy to backend');
     
+    // Add request interceptor for debugging
+    axios.interceptors.request.use((config) => {
+      console.log('📤 Axios Request:', {
+        url: config.url,
+        baseURL: config.baseURL,
+        fullURL: `${config.baseURL || ''}${config.url}`,
+        method: config.method,
+        headers: config.headers
+      });
+      return config;
+    }, (error) => {
+      console.error('📤 Request Error:', error);
+      return Promise.reject(error);
+    });
+    
     const storedToken = localStorage.getItem('accessToken');
     const storedUser = localStorage.getItem('user');
     
@@ -68,12 +83,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log('🚀 Login attempt:', {
         username,
-        url: '/api/auth/login'
+        url: '/api/auth/login',
+        proxy: 'Using package.json proxy to localhost:3002'
       });
       
       const response = await axios.post('/api/auth/login', {
         username,
         password
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
 
       console.log('✅ Login response:', response.data);

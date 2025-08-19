@@ -26,8 +26,23 @@ const port = parseInt(process.env.PORT || '3002');
 // Trust proxy for proper rate limiting
 app.set('trust proxy', 1);
 
-// Security middleware
-app.use(helmet())
+// Security middleware with enhanced CSP
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+      scriptSrc: ["'self'"],
+      connectSrc: ["'self'", "http://localhost:3000", "http://localhost:3002"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
+    },
+  },
+  crossOriginEmbedderPolicy: false
+}))
 
 // Rate limiting middleware
 app.use(generalLimiter)
@@ -35,10 +50,29 @@ app.use(generalLimiter)
 // Logging middleware
 app.use(morgan('combined'))
 
-// CORS middleware
+// Enhanced CORS middleware
+const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000'];
 app.use(cors({
-  origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000', 'http://127.0.0.1:3000'],
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, proxy requests, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Allow localhost on any port for development
+    if (origin?.includes('localhost') || origin?.includes('127.0.0.1')) {
+      return callback(null, true);
+    }
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log('🚫 CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS policy'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  maxAge: 86400 // 24 hours
 }))
 
 // Body parsing middleware

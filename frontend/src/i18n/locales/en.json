@@ -15,6 +15,41 @@
     "logout": "Logout",
     "skipToContent": "Skip to main content"
   },
+  "user": {
+    "role": {
+      "admin": "System Administrator",
+      "support": "IT Support",
+      "user": "User"
+    }
+  },
+  "menu": {
+    "toggle": "Toggle Menu",
+    "staff": "Staff Menu",
+    "settings": "Settings"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "search": "Search",
+    "submit": "Submit",
+    "close": "Close",
+    "retry": "Try Again",
+    "reload": "Reload Page"
+  },
+  "errors": {
+    "pageError": "An error occurred while rendering the page. Please try again.",
+    "badRequest": "Invalid data provided",
+    "unauthorized": "Please login again",
+    "forbidden": "You don't have permission to access this data",
+    "notFound": "Requested data not found",
+    "serverError": "Server error occurred. Please try again.",
+    "unknown": "An unexpected error occurred"
+  },
   "theme": {
     "toggleLight": "Switch to light mode",
     "toggleDark": "Switch to dark mode"
@@ -54,11 +89,11 @@
       "title": "Supported Problem Types",
       "description": "We provide comprehensive IT system support services",
       "computer": "Hardware, software, and virus issues",
-      "internet": "Internet connection and network problems",
-      "printer": "Printing issues and driver installation",
+      "internet": "Network and internet connection problems",
+      "printer": "Printer and driver installation issues",
       "information": "Department information system problems",
-      "installation": "Software and equipment installation",
-      "others": "Other IT-related issues"
+      "installation": "Software and equipment installation services",
+      "others": "Other IT-related issues and support"
     },
     "cta": {
       "title": "Ready to Report an Issue?",
@@ -75,13 +110,26 @@
       "contactInfo": "Contact Information",
       "organizationInfo": "Organization Information"
     },
+    "categories": {
+      "hardware": "Hardware",
+      "software": "Software",
+      "network": "Network",
+      "printer": "Printer",
+      "phone": "Phone",
+      "email": "Email",
+      "system": "System",
+      "virus": "Virus",
+      "backup": "Backup",
+      "training": "Training",
+      "others": "Others"
+    },
     "fields": {
       "problemType": {
         "label": "Problem Type",
         "placeholder": "Select problem type",
         "options": {
-          "computer": "Computer",
-          "internet": "Internet",
+          "computer": "Hardware/Software",
+          "internet": "Network/Internet",
           "printer": "Printer",
           "information": "Information System",
           "installation": "Installation",
@@ -262,7 +310,16 @@
     "noTicketsInThisCategory": "No tickets in this category",
     "noUnassignedTickets": "No unassigned tickets",
     "notifications": "Notifications",
-    "noNewNotifications": "No new notifications"
+    "noNewNotifications": "No new notifications",
+    "admin": {
+      "manageUsers": "Manage Users",
+      "manageTickets": "Manage Tickets",
+      "assignTickets": "Assign Tickets",
+      "autoAssign": "Auto Assign"
+    },
+    "ticketStatus": {
+      "unassigned": "Unassigned"
+    }
   },
   "common": {
     "loading": "Loading...",
@@ -298,12 +355,132 @@
   "footer": {
     "copyright": "© 2025 Department of Women's Affairs and Family Development - Helpdesk System"
   },
+  "search": {
+    "title": "Advanced Ticket Search",
+    "description": "Search and analyze tickets with advanced tools and real-time statistics",
+    "searchPlaceholder": "Search tickets (ID, reporter, description...)",
+    "advancedSearch": "Advanced Search",
+    "searchResults": "Search Results",
+    "searchError": "Error occurred while searching",
+    "pleaseSearchFirst": "Please search for data before exporting",
+    "exportSuccess": "Data exported successfully",
+    "exportError": "Error occurred while exporting data",
+    "sessionExpired": "Session expired. Please log in again",
+    "searching": "Searching...",
+    "pleaseWait": "Please wait",
+    "noResultsFound": "No results found",
+    "noResultsMessage": "Try changing your search criteria",
+    "totalResults": "Total Results",
+    "activeSearch": "Active Search",
+    "pages": "Pages",
+    "viewMode": "View Mode",
+    "currentPage": "Current Page",
+    "totalPages": "Total Pages",
+    "results": "Results",
+    "resultsList": "Results",
+    "showing": "Showing",
+    "sortBy": "Sort By",
+    "sortOptions": {
+      "createdAt": "Created Date",
+      "updatedAt": "Updated Date",
+      "priority": "Priority",
+      "status": "Status"
+    },
+    "sortOrder": {
+      "asc": "Ascending",
+      "desc": "Descending"
+    },
+    "viewModes": {
+      "list": "List",
+      "grid": "Grid"
+    },
+    "actions": {
+      "refresh": "Refresh",
+      "refreshResults": "Refresh Search Results",
+      "export": "Export CSV",
+      "viewDetails": "View Details"
+    },
+    "filters": {
+      "status": "Status",
+      "priority": "Priority",
+      "department": "Department",
+      "dateRange": "Date Range",
+      "from": "From",
+      "to": "To"
+    },
+    "sort": {
+      "label": "Sort By",
+      "newest": "Newest First",
+      "oldest": "Oldest First",
+      "priority": "By Priority",
+      "status": "By Status"
+    },
+    "export": "Export Results",
+    "noResults": "No results found matching your criteria",
+    "advancedFilters": {
+      "title": "Advanced Filters",
+      "searchButton": "Search",
+      "resetButton": "Clear Filters",
+      "status": "Status",
+      "priority": "Priority",
+      "problemType": "Problem Type",
+      "department": "Department",
+      "dateFrom": "From Date",
+      "dateTo": "To Date",
+      "allStatus": "All Status",
+      "allPriority": "All Levels",
+      "allProblemType": "All Types",
+      "allDepartment": "All Departments",
+      "foundResults": "Found {count} results",
+      "activeFilters": "Active Filters",
+      "keywordLabel": "Keyword",
+      "statusLabel": "Status",
+      "priorityLabel": "Priority",
+      "problemTypeLabel": "Type",
+      "departmentLabel": "Department",
+      "dateRangeLabel": "Date Range"
+    },
+    "results": {
+      "noResults": "No results found",
+      "noResultsMessage": "Try changing your search criteria or filters for better results",
+      "searchTipsTitle": "💡 Search Tips",
+      "createdAt": "Created at",
+      "updatedAt": "Last updated",
+      "assignedTo": "Assigned to",
+      "resolvedAt": "Resolved at",
+      "viewDetails": "View details",
+      "previous": "Previous",
+      "next": "Next",
+      "resolved": "✓ Resolved"
+    },
+    "ticketDetails": {
+      "ticketId": "Ticket ID",
+      "status": "Status",
+      "priority": "Priority",
+      "problemType": "Problem Type",
+      "description": "Description",
+      "reporter": "Reporter",
+      "department": "Department",
+      "assignedTo": "Assigned To",
+      "createdAt": "Created At",
+      "updatedAt": "Updated At"
+    }
+  },
   "messages": {
     "ticketSubmitted": "Issue reported successfully!",
     "loginSuccess": "Login successful",
     "logoutSuccess": "Logout successful",
     "rateLimitExceeded": "You have exceeded the reporting limit (3 times/hour). Please try again later",
     "submitError": "Error occurred while reporting issue. Please try again",
-    "networkError": "Connection error occurred. Please check your internet connection"
+    "networkError": "Connection error occurred. Please check your internet connection",
+    "statusUpdateSuccess": "Status updated successfully",
+    "statusUpdateError": "Error occurred while updating status",
+    "assignTicketSuccess": "Ticket assigned successfully",
+    "assignTicketError": "Error occurred while assigning ticket",
+    "searchError": "Error occurred while searching",
+    "exportSuccess": "Data exported successfully",
+    "exportError": "Error occurred while exporting data",
+    "pleaseSearchFirst": "Please search for data before exporting",
+    "sessionExpired": "Session expired. Please log in again"
   }
 }

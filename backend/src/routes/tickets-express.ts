@@ -1528,7 +1528,7 @@ ticketRoutes.post('/:id/close', authMiddleware, requireSupport, async (req: Requ
         userId: 1, // System notification - you might want to change this logic  
         ticketId: parseInt(id),
         title: `Ticket ${ticket.ticketId} ได้รับการแก้ไขแล้ว`,
-        message: `เรื่อง "${(ticket.problemDescription || 'N/A').toString().substring(0, 50)}..." ได้รับการแก้ไขเรียบร้อยแล้ว`,
+        message: `เรื่อง "${ticket.problemDescription ? ticket.problemDescription.substring(0, 50) : 'N/A'}..." ได้รับการแก้ไขเรียบร้อยแล้ว`,
         isRead: false
       }
     })

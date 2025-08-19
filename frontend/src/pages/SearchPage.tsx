@@ -5,6 +5,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import AdvancedSearch from '../components/AdvancedSearch';
 import { useWebSocket } from '../hooks/useWebSocket';
+import { useLanguage } from '../hooks/useLanguage';
 import { 
   FileText, 
   User, 
@@ -68,6 +69,7 @@ interface Ticket {
 const SearchPage: React.FC = () => {
   const { isAuthenticated, logout } = useAuth();
   const { lastTicketUpdate } = useWebSocket();
+  const { t } = useLanguage();
   
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(false);
@@ -106,7 +108,7 @@ const SearchPage: React.FC = () => {
     (response) => response,
     async (error) => {
       if (error.response?.status === 401) {
-        toast.error('Session หมดอายุ กรุณาเข้าสู่ระบบใหม่');
+        toast.error(t('messages.sessionExpired'));
         logout();
         return Promise.reject(error);
       }
@@ -160,6 +162,8 @@ const SearchPage: React.FC = () => {
       
       params.append('page', page.toString());
       params.append('limit', pagination.limit.toString());
+      params.append('sort_by', sortBy);
+      params.append('sort_order', sortOrder);
 
       const response = await api.get(`/tickets/search?${params.toString()}`);
       
@@ -177,7 +181,7 @@ const SearchPage: React.FC = () => {
         params: error.config?.params
       });
       if (error.response?.status !== 401) {
-        toast.error('เกิดข้อผิดพลาดในการค้นหา');
+        toast.error(t('messages.searchError'));
       }
     } finally {
       setLoading(false);
@@ -211,9 +215,16 @@ const SearchPage: React.FC = () => {
     }
   }, [lastTicketUpdate, currentFilters]);
 
+  // Re-search เมื่อ sort parameters เปลี่ยน
+  useEffect(() => {
+    if (currentFilters) {
+      searchTickets(currentFilters, 1);
+    }
+  }, [sortBy, sortOrder]);
+
   const exportResults = async () => {
     if (!currentFilters) {
-      toast.error('กรุณาค้นหาข้อมูลก่อนส่งออก');
+      toast.error(t('messages.pleaseSearchFirst'));
       return;
     }
 
@@ -243,11 +254,17 @@ const SearchPage: React.FC = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      toast.success('ส่งออกข้อมูลสำเร็จ');
+      toast.success(t('messages.exportSuccess'));
     } catch (error) {
       console.error('Export error:', error);
-      toast.error('เกิดข้อผิดพลาดในการส่งออกข้อมูล');
+      toast.error(t('messages.exportError'));
     }
+  };
+
+  const handleViewDetails = (ticketId: string) => {
+    // Navigate to track page with pre-filled ticket ID and auto-search
+    const trackUrl = `/track?id=${ticketId}&autoSearch=true`;
+    window.open(trackUrl, '_blank');
   };
 
   const getStatusColor = (status: string) => {
@@ -309,12 +326,12 @@ const SearchPage: React.FC = () => {
                 <div className="ml-6">
                   <h1 className="text-5xl font-bold mb-2">
                     <span className="bg-gradient-to-r from-primary-600 via-purple-600 to-blue-600 dark:from-primary-400 dark:via-purple-400 dark:to-blue-400 bg-clip-text text-transparent">
-                      ค้นหา
+{t('search.title')}
                     </span>
-                    <span className="text-gray-900 dark:text-white ml-3">Advanced</span>
+                    <span className="text-gray-900 dark:text-white ml-3">{t('search.advancedSearch')}</span>
                   </h1>
                   <p className="text-xl text-gray-600 dark:text-gray-400 leading-relaxed">
-                    ค้นหาและวิเคราะห์ Tickets ด้วยเครื่องมือขั้นสูง พร้อมสถิติแบบเรียลไทม์
+{t('search.description')}
                   </p>
                 </div>
               </div>
@@ -330,7 +347,7 @@ const SearchPage: React.FC = () => {
                     </div>
                     <div>
                       <div className="text-2xl font-bold text-gray-900 dark:text-white">{pagination.total || '0'}</div>
-                      <div className="text-xs text-gray-500">Total Results</div>
+                      <div className="text-xs text-gray-500">{t('search.totalResults')}</div>
                     </div>
                   </div>
                 </div>
@@ -341,7 +358,7 @@ const SearchPage: React.FC = () => {
                     </div>
                     <div>
                       <div className="text-2xl font-bold text-gray-900 dark:text-white">{currentFilters ? '1' : '0'}</div>
-                      <div className="text-xs text-gray-500">Active Search</div>
+                      <div className="text-xs text-gray-500">{t('search.activeSearch')}</div>
                     </div>
                   </div>
                 </div>
@@ -352,7 +369,7 @@ const SearchPage: React.FC = () => {
                     </div>
                     <div>
                       <div className="text-2xl font-bold text-gray-900 dark:text-white">{pagination.totalPages || '0'}</div>
-                      <div className="text-xs text-gray-500">Pages</div>
+                      <div className="text-xs text-gray-500">{t('search.pages')}</div>
                     </div>
                   </div>
                 </div>
@@ -362,8 +379,8 @@ const SearchPage: React.FC = () => {
                       <Award className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <div className="text-2xl font-bold text-gray-900 dark:text-white">{viewMode === 'list' ? 'List' : 'Grid'}</div>
-                      <div className="text-xs text-gray-500">View Mode</div>
+                      <div className="text-2xl font-bold text-gray-900 dark:text-white">{viewMode === 'list' ? t('search.viewModes.list') : t('search.viewModes.grid')}</div>
+                      <div className="text-xs text-gray-500">{t('search.viewMode')}</div>
                     </div>
                   </div>
                 </div>
@@ -404,20 +421,20 @@ const SearchPage: React.FC = () => {
                       </div>
                       <div>
                         <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                          ผลการค้นหา
+  {t('search.searchResults')}
                         </h2>
                         {pagination.total > 0 ? (
                           <div className="flex items-center space-x-4">
                             <span className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-primary-100 to-purple-100 dark:from-primary-900/30 dark:to-purple-900/30 text-primary-700 dark:text-primary-300 text-lg font-bold rounded-2xl border border-primary-200/50 dark:border-primary-700/50">
                               <TrendingUp className="w-5 h-5 mr-2" />
-                              {pagination.total.toLocaleString()} รายการ
+                              {pagination.total.toLocaleString()} {t('search.resultsList')}
                             </span>
                             <span className="text-gray-600 dark:text-gray-400">
-                              แสดง {((pagination.page - 1) * pagination.limit) + 1}-{Math.min(pagination.page * pagination.limit, pagination.total)}
+                              {t('search.showing')} {pagination.total > 0 ? ((pagination.page - 1) * pagination.limit) + 1 : 0}-{pagination.total > 0 ? Math.min(pagination.page * pagination.limit, pagination.total) : 0}
                             </span>
                           </div>
                         ) : (
-                          <p className="text-gray-500 dark:text-gray-400 text-lg">ไม่พบผลการค้นหา</p>
+                          <p className="text-gray-500 dark:text-gray-400 text-lg">{t('search.noResultsFound')}</p>
                         )}
                       </div>
                     </div>
@@ -430,7 +447,7 @@ const SearchPage: React.FC = () => {
                             <PieChart className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                             <div>
                               <div className="text-lg font-bold text-gray-900 dark:text-white">{pagination.totalPages}</div>
-                              <div className="text-xs text-gray-500">หน้าทั้งหมด</div>
+                              <div className="text-xs text-gray-500">{t('search.totalPages')}</div>
                             </div>
                           </div>
                         </div>
@@ -439,7 +456,7 @@ const SearchPage: React.FC = () => {
                             <Activity className="w-6 h-6 text-green-600 dark:text-green-400" />
                             <div>
                               <div className="text-lg font-bold text-gray-900 dark:text-white">{pagination.page}</div>
-                              <div className="text-xs text-gray-500">หน้าปัจจุบัน</div>
+                              <div className="text-xs text-gray-500">{t('search.currentPage')}</div>
                             </div>
                           </div>
                         </div>
@@ -455,21 +472,21 @@ const SearchPage: React.FC = () => {
                     <div className="flex items-center space-x-4">
                       <div className="flex items-center space-x-3">
                         <Shield className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">เรียงตาม:</span>
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('search.sortBy')}:</span>
                         <select
                           value={sortBy}
                           onChange={(e) => setSortBy(e.target.value as any)}
                           className="px-4 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
                         >
-                          <option value="createdAt">วันที่สร้าง</option>
-                          <option value="updatedAt">วันที่อัปเดต</option>
-                          <option value="priority">ความสำคัญ</option>
-                          <option value="status">สถานะ</option>
+                          <option value="createdAt">{t('search.sortOptions.createdAt')}</option>
+                          <option value="updatedAt">{t('search.sortOptions.updatedAt')}</option>
+                          <option value="priority">{t('search.sortOptions.priority')}</option>
+                          <option value="status">{t('search.sortOptions.status')}</option>
                         </select>
                         <button
                           onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
                           className="p-2 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border-2 border-gray-200 dark:border-gray-600 rounded-xl transition-all hover:shadow-md"
-                          title={sortOrder === 'asc' ? 'เรียงจากน้อยไปมาก' : 'เรียงจากมากไปน้อย'}
+                          title={sortOrder === 'asc' ? t('search.sortOrder.asc') : t('search.sortOrder.desc')}
                         >
                           {sortOrder === 'asc' ? 
                             <SortAsc className="w-5 h-5 text-gray-600 dark:text-gray-400" /> : 
@@ -492,7 +509,7 @@ const SearchPage: React.FC = () => {
                           }`}
                         >
                           <List className="w-4 h-4" />
-                          <span className="hidden sm:inline">รายการ</span>
+                          <span className="hidden sm:inline">{t('search.viewModes.list')}</span>
                         </button>
                         <button
                           onClick={() => setViewMode('grid')}
@@ -503,7 +520,7 @@ const SearchPage: React.FC = () => {
                           }`}
                         >
                           <Grid className="w-4 h-4" />
-                          <span className="hidden sm:inline">ตาราง</span>
+                          <span className="hidden sm:inline">{t('search.viewModes.grid')}</span>
                         </button>
                       </div>
 
@@ -512,10 +529,10 @@ const SearchPage: React.FC = () => {
                         <button
                           onClick={() => currentFilters && searchTickets(currentFilters, pagination.page)}
                           className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl transition-all hover:shadow-lg font-medium"
-                          title="รีเฟรชผลการค้นหา"
+                          title={t('search.actions.refreshResults')}
                         >
                           <RefreshCcw className="w-4 h-4" />
-                          <span className="hidden md:inline">รีเฟรช</span>
+                          <span className="hidden md:inline">{t('search.actions.refresh')}</span>
                         </button>
                         
                         {tickets.length > 0 && (
@@ -524,7 +541,7 @@ const SearchPage: React.FC = () => {
                             className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-2xl transition-all hover:shadow-lg font-medium"
                           >
                             <Download className="h-4 w-4" />
-                            <span className="hidden md:inline">ส่งออก CSV</span>
+                            <span className="hidden md:inline">{t('search.actions.export')}</span>
                           </button>
                         )}
                       </div>
@@ -545,8 +562,8 @@ const SearchPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="ml-6">
-                  <p className="text-xl font-semibold text-gray-900 dark:text-white mb-2">กำลังค้นหา...</p>
-                  <p className="text-gray-600 dark:text-gray-400">กรุณารอสักครู่</p>
+                  <p className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{t('search.searching')}</p>
+                  <p className="text-gray-600 dark:text-gray-400">{t('search.pleaseWait')}</p>
                 </div>
               </div>
             ) : tickets.length === 0 ? (
@@ -631,7 +648,11 @@ const SearchPage: React.FC = () => {
                                 }) : 'ไม่ระบุ'}
                               </div>
                             </div>
-                            <button className="opacity-0 group-hover:opacity-100 p-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-2xl transition-all duration-200 hover:scale-105" title="ดูรายละเอียด">
+                            <button 
+                              onClick={() => handleViewDetails(ticket.ticketId)}
+                              className="opacity-0 group-hover:opacity-100 p-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-2xl transition-all duration-200 hover:scale-105" 
+                              title={t('search.results.viewDetails')}
+                            >
                               <Eye className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                             </button>
                           </div>
@@ -711,7 +732,11 @@ const SearchPage: React.FC = () => {
                               {ticket.ticketId}
                             </span>
                           </div>
-                          <button className="opacity-0 group-hover:opacity-100 p-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-all duration-200" title="ดูรายละเอียด">
+                          <button 
+                            onClick={() => handleViewDetails(ticket.ticketId)}
+                            className="opacity-0 group-hover:opacity-100 p-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-all duration-200" 
+                            title={t('search.results.viewDetails')}
+                          >
                             <Eye className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                           </button>
                         </div>

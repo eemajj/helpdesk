@@ -7,7 +7,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { useLanguage } from './hooks/useLanguage';
 import Layout from './components/Layout';
 import DocumentTitle from './components/DocumentTitle';
-import ProtectedRoute from './components/ProtectedRoute';
+import { SupportRoute, AdminRoute } from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 
 // ⚡ ULTRA OPTIMIZATION: Lazy load pages for faster initial load
@@ -18,14 +18,18 @@ const LoginPage = React.lazy(() => import('./pages/LoginPage'));
 const DashboardPage = React.lazy(() => import('./pages/DashboardPage'));
 const SearchPage = React.lazy(() => import('./pages/SearchPage'));
 const AdminDashboardPage = React.lazy(() => import('./pages/AdminDashboardPage'));
+const UnauthorizedPage = React.lazy(() => import('./pages/UnauthorizedPage'));
 
 // Ultra-fast loading component
-const LoadingSpinner = () => (
-  <div className="flex items-center justify-center min-h-[50vh]">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-    <span className="ml-3 text-gray-600">กำลังโหลด...</span>
-  </div>
-);
+const LoadingSpinner = () => {
+  const { t } = useLanguage();
+  return (
+    <div className="flex items-center justify-center min-h-[50vh]">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <span className="ml-3 text-gray-600">{t('common.loading')}</span>
+    </div>
+  );
+};
 
 const App: React.FC = () => {
   const { t } = useLanguage();
@@ -51,27 +55,28 @@ const App: React.FC = () => {
                       <Route 
                         path="/dashboard" 
                         element={
-                          <ProtectedRoute allowedRoles={['ADMIN', 'SUPPORT']}>
+                          <SupportRoute>
                             <DashboardPage />
-                          </ProtectedRoute>
+                          </SupportRoute>
                         } 
                       />
                       <Route 
                         path="/search" 
                         element={
-                          <ProtectedRoute allowedRoles={['ADMIN', 'SUPPORT']}>
+                          <SupportRoute>
                             <SearchPage />
-                          </ProtectedRoute>
+                          </SupportRoute>
                         } 
                       />
                       <Route
                         path="/admin/dashboard"
                         element={
-                          <ProtectedRoute allowedRoles={['ADMIN']}>
+                          <AdminRoute>
                             <AdminDashboardPage />
-                          </ProtectedRoute>
+                          </AdminRoute>
                         }
                       />
+                      <Route path="/unauthorized" element={<UnauthorizedPage />} />
                     </Routes>
                   </Suspense>
                 </main>

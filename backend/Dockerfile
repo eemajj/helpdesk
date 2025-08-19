@@ -2,27 +2,22 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Install dependencies first (for better caching)
+# Copy package files
 COPY package*.json ./
-RUN npm ci --only=production && npm cache clean --force
 
-# Copy only necessary files
+# Install all dependencies (including tsx for runtime)
+RUN npm ci && npm cache clean --force
+
+# Copy application files
 COPY prisma ./prisma/
 COPY src ./src/
 COPY tsconfig.json ./
 
-# Install dev dependencies only for build
-RUN npm ci && \
-    npx prisma generate && \
-    npm run build && \
-    npm prune --production && \
-    npm cache clean --force
-
-# Remove source files after build
-RUN rm -rf src/ tsconfig.json
+# Generate Prisma client
+RUN npx prisma generate
 
 # Expose port
 EXPOSE 3002
 
-# Start server
-CMD ["npm", "start"]
+# Start server using tsx
+CMD ["npx", "tsx", "src/server-complete.ts"]

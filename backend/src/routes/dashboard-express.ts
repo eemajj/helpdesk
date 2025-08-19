@@ -3,8 +3,84 @@ import { prisma } from '../db/connection'
 import { authMiddleware, requireSupport } from '../middleware/auth'
 import { ultraCache, ultraQueryCache, getCachedUsers } from '../middleware/ultraCache'
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     DashboardStats:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           example: true
+ *         stats:
+ *           type: object
+ *           properties:
+ *             total:
+ *               type: integer
+ *               description: จำนวน tickets ทั้งหมด
+ *               example: 150
+ *             open:
+ *               type: integer
+ *               description: จำนวน tickets ที่รอดำเนินการ
+ *               example: 25
+ *             inProgress:
+ *               type: integer
+ *               description: จำนวน tickets ที่กำลังดำเนินการ
+ *               example: 45
+ *             resolved:
+ *               type: integer
+ *               description: จำนวน tickets ที่เสร็จสิ้นแล้ว
+ *               example: 80
+ *             totalUsers:
+ *               type: integer
+ *               description: จำนวนผู้ใช้ทั้งหมด (ไม่รวม admin)
+ *               example: 50
+ *     DashboardTickets:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           example: true
+ *         tickets:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/Ticket'
+ *         pagination:
+ *           $ref: '#/components/schemas/Pagination'
+ */
+
 export const dashboardRoutes = Router()
 
+/**
+ * @swagger
+ * /dashboard/stats:
+ *   get:
+ *     summary: Get dashboard statistics
+ *     description: ดึงข้อมูลสถิติสำหรับหน้า dashboard (รองรับ Ultra Cache)
+ *     tags: [Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: สถิติ dashboard สำเร็จ
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/DashboardStats'
+ *       401:
+ *         description: ไม่ได้รับอนุญาต
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: เกิดข้อผิดพลาดในระบบ
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // ⚡ ULTRA OPTIMIZED Dashboard stats - ULTRA CACHED
 dashboardRoutes.get('/stats', authMiddleware, requireSupport, 
   ultraQueryCache((req) => `dashboard_stats_${(req as any).user.role}`, 60), 
@@ -44,6 +120,44 @@ dashboardRoutes.get('/stats', authMiddleware, requireSupport,
   }
 })
 
+/**
+ * @swagger
+ * /dashboard/tickets:
+ *   get:
+ *     summary: Get recent tickets for dashboard
+ *     description: ดึงรายการ tickets ล่าสุดสำหรับหน้า dashboard (รองรับ Ultra Cache)
+ *     tags: [Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *           minimum: 1
+ *           maximum: 100
+ *         description: จำนวน tickets ที่ต้องการแสดง
+ *     responses:
+ *       200:
+ *         description: รายการ tickets ล่าสุดสำเร็จ
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/DashboardTickets'
+ *       401:
+ *         description: ไม่ได้รับอนุญาต
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: เกิดข้อผิดพลาดในระบบ
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // ⚡ ULTRA OPTIMIZED Recent tickets - ULTRA CACHED
 dashboardRoutes.get('/tickets', authMiddleware, requireSupport, 
   ultraQueryCache((req) => `dashboard_tickets_${req.query.limit || 10}_${(req as any).user.role}`, 30), 

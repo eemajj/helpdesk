@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
-import { Search, Clock, User, Phone, Building, Edit, MessageSquare, CheckCircle, AlertCircle, PlayCircle, XCircle, ArrowLeft, Loader2, Calendar, Tag, Shield } from 'lucide-react';
+import { Search, Clock, User, Phone, Building, Edit, MessageSquare, CheckCircle, AlertCircle, Play, XCircle, ArrowLeft, Loader2, Calendar, Tag, Shield, FileText } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useLanguage } from '../hooks/useLanguage';
 import { useAuth } from '../contexts/AuthContext';
 import StatusUpdateModal from '../components/StatusUpdateModal';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 interface TicketData {
   id: number;
@@ -40,14 +40,13 @@ interface TicketData {
 const TicketTrackingPage: React.FC = () => {
   const { t, formatThaiDate } = useLanguage();
   const { isAuthenticated, user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [ticket, setTicket] = useState<TicketData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<{ ticketId: string }>();
-
-
+  const { register, handleSubmit, formState: { errors }, setValue } = useForm<{ ticketId: string }>();
 
   const getTimelineSteps = (status: string, createdAt: string, updatedAt: string) => {
     const steps = [
@@ -70,7 +69,7 @@ const TicketTrackingPage: React.FC = () => {
         description: 'เจ้าหน้าที่กำลังแก้ไขปัญหา',
         time: status !== 'รอดำเนินการ' ? formatThaiDate(updatedAt) : '',
         status: status === 'กำลังดำเนินการ' || status === 'รอข้อมูลเพิ่มเติม' ? 'active' : status === 'เสร็จสิ้น' ? 'completed' : 'pending',
-        icon: status === 'กำลังดำเนินการ' ? <PlayCircle className="w-4 h-4 text-blue-500" /> :
+        icon: status === 'กำลังดำเนินการ' ? <Play className="w-4 h-4 text-blue-500" /> :
               status === 'รอข้อมูลเพิ่มเติม' ? <AlertCircle className="w-4 h-4 text-orange-500" /> :
               status === 'เสร็จสิ้น' ? <CheckCircle className="w-4 h-4 text-green-500" /> :
               <Clock className="w-4 h-4 text-gray-400" />
@@ -86,7 +85,7 @@ const TicketTrackingPage: React.FC = () => {
     return steps;
   };
 
-  const onSubmit = async (data: { ticketId: string }) => {
+  const onSubmit = useCallback(async (data: { ticketId: string }) => {
     setIsLoading(true);
     setNotFound(false);
     setTicket(null);
@@ -106,7 +105,18 @@ const TicketTrackingPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [t]);
+
+  // Auto-search when URL parameters are present
+  useEffect(() => {
+    const ticketId = searchParams.get('id');
+    const autoSearch = searchParams.get('autoSearch');
+    
+    if (ticketId && autoSearch === 'true') {
+      setValue('ticketId', ticketId);
+      onSubmit({ ticketId });
+    }
+  }, [searchParams, setValue, onSubmit]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -139,6 +149,23 @@ const TicketTrackingPage: React.FC = () => {
         return t('tracking.status.cancelled');
       default:
         return status;
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'รอดำเนินการ':
+        return <Clock className="w-4 h-4 text-yellow-500" />;
+      case 'กำลังดำเนินการ':
+        return <Play className="w-4 h-4 text-blue-500" />;
+      case 'รอข้อมูลเพิ่มเติม':
+        return <AlertCircle className="w-4 h-4 text-orange-500" />;
+      case 'เสร็จสิ้น':
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'ยกเลิก':
+        return <XCircle className="w-4 h-4 text-red-500" />;
+      default:
+        return <Clock className="w-4 h-4 text-gray-400" />;
     }
   };
 

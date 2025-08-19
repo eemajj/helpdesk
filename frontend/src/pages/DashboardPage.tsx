@@ -44,7 +44,8 @@ import {
   Coffee,
   Crown
 } from 'lucide-react';
-import { User } from '../types/User'; // Moved to top
+import { User } from '../types/User';
+import RealTimeDashboard from '../components/charts/RealTimeDashboard';
 
 // Interfaces
 interface DashboardStats {
@@ -338,7 +339,7 @@ const DashboardPage: React.FC = () => {
                     }`}>
                       {user?.role === 'admin' && <Shield className="w-4 h-4 mr-2" />}
                       {user?.role === 'support' && <Settings className="w-4 h-4 mr-2" />}
-                      {user?.role === 'user' && <User className="w-4 h-4 mr-2" />}
+                      {user?.role === 'user' && <UserIcon className="w-4 h-4 mr-2" />}
                       {t(`common.role.${user?.role}`)}
                     </div>
                     <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
@@ -552,6 +553,11 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Real-time Dashboard */}
+        <div className="mb-12">
+          <RealTimeDashboard />
+        </div>
+
         {/* Advanced Analytics Section */}
         {user?.role === 'admin' && (
           <div className="grid lg:grid-cols-3 gap-8 mb-12">
@@ -744,7 +750,7 @@ const DashboardPage: React.FC = () => {
             <div className="card-header flex justify-between items-center">
               <h2 className="text-xl font-semibold">{t('dashboard.admin.manageUsers')}</h2>
               <button onClick={() => handleOpenModal(null)} className="bg-blue-500 text-white px-4 py-2 rounded-md flex items-center">
-                <PlusCircleIcon className="h-4 w-4 mr-2" />
+                <PlusCircle className="h-4 w-4 mr-2" />
                 {t('common.createUser')}
               </button>
             </div>
@@ -776,10 +782,10 @@ const DashboardPage: React.FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm">{userItem.createdAt ? new Date(userItem.createdAt).toLocaleDateString() : 'N/A'}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <button onClick={() => handleOpenModal(userItem)} className="text-blue-600 hover:text-blue-900 mr-4">
-                            <EditIcon className="h-5 w-5" />
+                            <Edit className="h-5 w-5" />
                           </button>
                           <button onClick={() => handleDeactivateUser(userItem.id!)} className="text-red-600 hover:text-red-900">
-                            <Trash2Icon className="h-5 w-5" />
+                            <Trash2 className="h-5 w-5" />
                           </button>
                         </td>
                       </tr>
@@ -802,7 +808,7 @@ const DashboardPage: React.FC = () => {
                 <div className="space-y-4">
                   {tickets.filter(ticket => !ticket.assigned_to_name).length === 0 ? (
                     <div className="text-center py-8">
-                      <CheckCircleIcon className="h-16 w-16 text-green-500 mx-auto mb-4" />
+                      <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
                       <p className="text-gray-500 dark:text-gray-400">{t('dashboard.noUnassignedTickets')}</p>
                     </div>
                   ) : (
@@ -819,12 +825,12 @@ const DashboardPage: React.FC = () => {
                             <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">{ticket.problem_description}</p>
                             <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 space-x-4">
                               <span className="flex items-center"><UserIcon className="h-3 w-3 mr-1" />{ticket.full_name} ({ticket.department})</span>
-                              <span className="flex items-center"><CalendarIcon className="h-3 w-3 mr-1" />{ticket.created_at ? new Date(ticket.created_at).toLocaleDateString('th-TH') : '-'}</span>
+                              <span className="flex items-center"><Calendar className="h-3 w-3 mr-1" />{ticket.created_at ? new Date(ticket.created_at).toLocaleDateString('th-TH') : '-'}</span>
                             </div>
                           </div>
                           <div className="ml-4">
                             <button onClick={() => autoAssignTicket(ticket.id)} className="flex items-center px-4 py-2 bg-primary-600 text-white text-sm rounded-md hover:bg-primary-700 transition-colors">
-                              <RefreshCcwIcon className="h-4 w-4 mr-2" />{t('dashboard.admin.autoAssign')}
+                              <RefreshCcw className="h-4 w-4 mr-2" />{t('dashboard.admin.autoAssign')}
                             </button>
                           </div>
                         </div>
@@ -857,7 +863,7 @@ const DashboardPage: React.FC = () => {
               <div className="card-body">
                 {filteredTickets.length === 0 ? (
                   <div className="text-center py-8">
-                    <XCircleIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                    <XCircle className="h-16 w-16 text-gray-300 mx-auto mb-4" />
                     <p className="text-gray-500 dark:text-gray-400">{t('dashboard.noTicketsInThisCategory')}</p>
                   </div>
                 ) : (
@@ -875,7 +881,7 @@ const DashboardPage: React.FC = () => {
                             <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">{ticket.problem_description}</p>
                             <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 space-x-4">
                               <span className="flex items-center"><UserIcon className="h-3 w-3 mr-1" />{ticket.full_name} ({ticket.department})</span>
-                              <span className="flex items-center"><CalendarIcon className="h-3 w-3 mr-1" />{new Date(ticket.created_at).toLocaleDateString('th-TH')}</span>
+                              <span className="flex items-center"><Calendar className="h-3 w-3 mr-1" />{new Date(ticket.created_at).toLocaleDateString('th-TH')}</span>
                             </div>
                           </div>
                           <div className="ml-4">
@@ -900,7 +906,7 @@ const DashboardPage: React.FC = () => {
               <div className="card-body">
                 {notifications.length === 0 ? (
                   <div className="text-center py-8">
-                    <CheckCircleIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                    <CheckCircle className="h-16 w-16 text-gray-300 mx-auto mb-4" />
                     <p className="text-gray-500 dark:text-gray-400">{t('dashboard.noNewNotifications')}</p>
                   </div>
                 ) : (

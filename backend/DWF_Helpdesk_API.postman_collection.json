@@ -1,0 +1,614 @@
+{
+  "info": {
+    "name": "DWF Helpdesk API",
+    "description": "Complete API collection for DWF Helpdesk System with authentication and all endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "dwf-helpdesk-api-v1"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3002/api",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "🔐 Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success) {",
+                  "        pm.collectionVariables.set('accessToken', response.accessToken);",
+                  "        pm.collectionVariables.set('refreshToken', response.refreshToken);",
+                  "        pm.test('Login successful', () => {",
+                  "            pm.expect(response.success).to.be.true;",
+                  "        });",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"DWF_Admin_2024\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh"]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🎫 Tickets",
+      "item": [
+        {
+          "name": "Create Ticket",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.ticket) {",
+                  "        pm.collectionVariables.set('testTicketId', response.ticket.ticketId);",
+                  "        pm.test('Ticket created successfully', () => {",
+                  "            pm.expect(response.success).to.be.true;",
+                  "            pm.expect(response.ticket.ticketId).to.exist;",
+                  "        });",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"problemType\": \"ฮาร์ดแวร์\",\n  \"problemDescription\": \"คอมพิวเตอร์เปิดไม่ติด ไฟไม่ขึ้นเลย\",\n  \"fullName\": \"นายทดสอบ ระบบ\",\n  \"phoneNumber\": \"0812345678\",\n  \"department\": \"กลุ่มงานเทคโนโลยี\",\n  \"division\": \"ฝ่ายพัฒนาระบบ\",\n  \"assetNumber\": \"DWF-PC-TEST-001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tickets",
+              "host": ["{{baseUrl}}"],
+              "path": ["tickets"]
+            }
+          }
+        },
+        {
+          "name": "Track Ticket",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tickets/track/TK1699234567890",
+              "host": ["{{baseUrl}}"],
+              "path": ["tickets", "track", "TK1699234567890"]
+            }
+          }
+        },
+        {
+          "name": "Search Tickets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tickets/search?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["tickets", "search"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "priority",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Ticket Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"กำลังดำเนินการ\",\n  \"comment\": \"เริ่มตรวจสอบปัญหา\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tickets/1/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["tickets", "1", "status"]
+            }
+          }
+        },
+        {
+          "name": "Get Categories",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tickets/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["tickets", "categories"]
+            }
+          }
+        },
+        {
+          "name": "Get Priorities",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tickets/priorities",
+              "host": ["{{baseUrl}}"],
+              "path": ["tickets", "priorities"]
+            }
+          }
+        },
+        {
+          "name": "Export Tickets CSV",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tickets/search?export=csv",
+              "host": ["{{baseUrl}}"],
+              "path": ["tickets", "search"],
+              "query": [
+                {
+                  "key": "export",
+                  "value": "csv"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📊 Dashboard",
+      "item": [
+        {
+          "name": "Get Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "stats"]
+            }
+          }
+        },
+        {
+          "name": "Get Recent Tickets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/tickets?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "tickets"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "👥 Users",
+      "item": [
+        {
+          "name": "Get User Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"ผู้ดูแลระบบ (อัปเดต)\",\n  \"email\": \"admin_updated@dwf.go.th\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Get All Users (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create User (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"newuser\",\n  \"password\": \"newuser123\",\n  \"fullName\": \"นายผู้ใช้ ใหม่\",\n  \"email\": \"newuser@dwf.go.th\",\n  \"role\": \"user\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔧 Admin",
+      "item": [
+        {
+          "name": "Get Admin Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "stats"]
+            }
+          }
+        },
+        {
+          "name": "Run Auto Assignment",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/auto-assign",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "auto-assign"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "⚙️ System",
+      "item": [
+        {
+          "name": "System Status",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["status"]
+            }
+          }
+        },
+        {
+          "name": "Health Check",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/status/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["status", "health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🧪 Test Scenarios",
+      "item": [
+        {
+          "name": "Complete Ticket Flow",
+          "item": [
+            {
+              "name": "1. Create Ticket",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 201', () => {",
+                      "    pm.response.to.have.status(201);",
+                      "});",
+                      "",
+                      "pm.test('Response has ticket ID', () => {",
+                      "    const response = pm.response.json();",
+                      "    pm.expect(response.ticket.ticketId).to.exist;",
+                      "    pm.collectionVariables.set('testTicketId', response.ticket.ticketId);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"problemType\": \"ซอฟต์แวร์\",\n  \"problemDescription\": \"โปรแกรม Microsoft Office เปิดไม่ได้\",\n  \"fullName\": \"นายทดสอบ ระบบงาน\",\n  \"phoneNumber\": \"0987654321\",\n  \"department\": \"สำนักงานเลขานุการกรม\",\n  \"division\": \"กลุ่มงานธุรการ\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/tickets",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["tickets"]
+                }
+              }
+            },
+            {
+              "name": "2. Track Created Ticket",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 200', () => {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test('Ticket found', () => {",
+                      "    const response = pm.response.json();",
+                      "    pm.expect(response.success).to.be.true;",
+                      "    pm.expect(response.ticket).to.exist;",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/tickets/track/{{testTicketId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["tickets", "track", "{{testTicketId}}"]
+                }
+              }
+            },
+            {
+              "name": "3. Login as Support",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    const response = pm.response.json();",
+                      "    if (response.success) {",
+                      "        pm.collectionVariables.set('accessToken', response.accessToken);",
+                      "    }",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"support1\",\n  \"password\": \"DWF_Support_2024\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/auth/login",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "login"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rate Limiting Test",
+          "item": [
+            {
+              "name": "Rapid Ticket Creation (should be limited)",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"problemType\": \"เครือข่าย\",\n  \"problemDescription\": \"อินเทอร์เน็ตช้า\",\n  \"fullName\": \"นายทดสอบ อัตรา\",\n  \"phoneNumber\": \"0111111111\",\n  \"department\": \"IT\",\n  \"division\": \"ทดสอบ\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/tickets",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["tickets"]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -137,7 +137,10 @@ export const ultraAuthMiddleware = (req: Request, res: Response, next: NextFunct
   // If not in cache, verify token (this should rarely happen)
   try {
     const jwt = require('jsonwebtoken');
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dwf-helpdesk-secret-key') as any;
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET not configured');
+    }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET) as any;
     
     // Cache the token
     ultraCache.setToken(token, { userId: decoded.userId, role: decoded.role });

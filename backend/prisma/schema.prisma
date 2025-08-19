@@ -8,26 +8,26 @@ datasource db {
 }
 
 model User {
-  id              Int             @id @default(autoincrement())
-  username        String          @unique @db.VarChar(50)
-  passwordHash    String          @map("password_hash") @db.VarChar(255)
-  fullName        String          @map("full_name") @db.VarChar(100)
-  email           String?         @unique @db.VarChar(100)
-  role            UserRole        @default(user)
-  isActive        Boolean         @default(true) @map("is_active")
-  autoAssignEnabled Boolean       @default(true) @map("auto_assign_enabled")
-  createdAt       DateTime        @default(now()) @map("created_at")
-  updatedAt       DateTime        @updatedAt @map("updated_at")
-  lastLogin       DateTime?       @map("last_login")
-  lastAssignedAt  DateTime?       @map("last_assigned_at")
-  notifications   Notification[]
-  comments        TicketComment[]
-  assignedTickets Ticket[]        @relation("AssignedTo")
-  passwordResets  PasswordReset[]
-  autoAssignRequests AutoAssignRequest[]
-  approvedRequests AutoAssignRequest[] @relation("AutoAssignApprover")
-  userActivitiesAsTarget UserActivity[] @relation("UserActivityTarget")
-  userActivitiesAsAdmin UserActivity[] @relation("UserActivityAdmin")
+  id                     Int                 @id @default(autoincrement())
+  username               String              @unique @db.VarChar(50)
+  passwordHash           String              @map("password_hash") @db.VarChar(255)
+  fullName               String              @map("full_name") @db.VarChar(100)
+  email                  String?             @unique @db.VarChar(100)
+  role                   UserRole            @default(user)
+  isActive               Boolean             @default(true) @map("is_active")
+  createdAt              DateTime            @default(now()) @map("created_at")
+  updatedAt              DateTime            @updatedAt @map("updated_at")
+  lastLogin              DateTime?           @map("last_login")
+  autoAssignEnabled      Boolean             @default(true) @map("auto_assign_enabled")
+  lastAssignedAt         DateTime?           @map("last_assigned_at")
+  approvedRequests       AutoAssignRequest[] @relation("AutoAssignApprover")
+  autoAssignRequests     AutoAssignRequest[]
+  notifications          Notification[]
+  passwordResets         PasswordReset[]
+  comments               TicketComment[]
+  assignedTickets        Ticket[]            @relation("AssignedTo")
+  userActivitiesAsAdmin  UserActivity[]      @relation("UserActivityAdmin")
+  userActivitiesAsTarget UserActivity[]      @relation("UserActivityTarget")
 
   @@map("users")
 }
@@ -70,7 +70,6 @@ model Ticket {
   comments           TicketComment[]
   assignedTo         User?              @relation("AssignedTo", fields: [assignedToId], references: [id])
 
-  // Optimized indexes for performance
   @@index([status])
   @@index([assignedToId])
   @@index([createdAt])
@@ -133,37 +132,6 @@ model TicketAttachment {
   @@map("ticket_attachments")
 }
 
-enum UserRole {
-  admin
-  support
-  user
-}
-
-enum TicketStatus {
-  PENDING
-  IN_PROGRESS
-  WAITING_INFO
-  COMPLETED
-  CANCELLED
-}
-
-enum TicketPriority {
-  CRITICAL
-  URGENT
-  HIGH
-  ELEVATED
-  NORMAL
-  LOW
-  VERY_LOW
-  LOWEST
-}
-
-enum CommentType {
-  comment
-  status_change
-  assignment
-}
-
 model Category {
   id          Int      @id @default(autoincrement())
   name        String   @unique @db.VarChar(50)
@@ -193,19 +161,18 @@ model Priority {
 }
 
 model AutoAssignRequest {
-  id          Int      @id @default(autoincrement())
-  userId      Int      @map("user_id")
-  requestType String   @map("request_type") @db.VarChar(20) // 'disable' or 'enable'
-  reason      String?  @db.VarChar(500)
-  status      String   @default("pending") @db.VarChar(20) // 'pending', 'approved', 'rejected'
-  adminNotes  String?  @map("admin_notes") @db.VarChar(500)
-  approvedBy  Int?     @map("approved_by")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id          Int       @id @default(autoincrement())
+  userId      Int       @map("user_id")
+  requestType String    @map("request_type") @db.VarChar(20)
+  reason      String?   @db.VarChar(500)
+  status      String    @default("pending") @db.VarChar(20)
+  adminNotes  String?   @map("admin_notes") @db.VarChar(500)
+  approvedBy  Int?      @map("approved_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
   approvedAt  DateTime? @map("approved_at")
-  
-  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  approver User? @relation("AutoAssignApprover", fields: [approvedBy], references: [id])
+  approver    User?     @relation("AutoAssignApprover", fields: [approvedBy], references: [id])
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
@@ -217,19 +184,49 @@ model UserActivity {
   id          Int      @id @default(autoincrement())
   userId      Int?     @map("user_id")
   adminId     Int      @map("admin_id")
-  action      String   @db.VarChar(50) // 'create', 'update', 'suspend', 'activate', 'delete'
-  targetType  String   @map("target_type") @db.VarChar(20) // 'user', 'ticket', 'system'
+  action      String   @db.VarChar(50)
+  targetType  String   @map("target_type") @db.VarChar(20)
   targetId    String?  @map("target_id") @db.VarChar(50)
   description String   @db.VarChar(500)
-  metadata    String?  // JSON string for additional data
+  metadata    String?
   createdAt   DateTime @default(now()) @map("created_at")
-
-  user  User? @relation("UserActivityTarget", fields: [userId], references: [id])
-  admin User  @relation("UserActivityAdmin", fields: [adminId], references: [id])
+  admin       User     @relation("UserActivityAdmin", fields: [adminId], references: [id])
+  user        User?    @relation("UserActivityTarget", fields: [userId], references: [id])
 
   @@index([userId])
   @@index([adminId])
   @@index([action])
   @@index([createdAt])
   @@map("user_activities")
+}
+
+enum UserRole {
+  admin
+  support
+  user
+}
+
+enum TicketStatus {
+  PENDING
+  IN_PROGRESS
+  WAITING_INFO
+  COMPLETED
+  CANCELLED
+}
+
+enum TicketPriority {
+  CRITICAL
+  URGENT
+  HIGH
+  ELEVATED
+  NORMAL
+  LOW
+  VERY_LOW
+  LOWEST
+}
+
+enum CommentType {
+  comment
+  status_change
+  assignment
 }
