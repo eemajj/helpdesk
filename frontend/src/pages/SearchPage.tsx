@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import axios from 'axios';
@@ -13,15 +13,12 @@ import {
   Clock,
   Download,
   Search,
-  Filter,
   SortAsc,
   SortDesc,
   Grid,
   List,
   RefreshCcw,
   Eye,
-  ArrowLeft,
-  Loader2,
   TrendingUp,
   BarChart3,
   PieChart,
@@ -29,13 +26,11 @@ import {
   Zap,
   Target,
   Award,
-  AlertCircle,
-  Ticket,
+  Ticket as TicketIcon,
   Building,
   Shield,
-  CheckCircle,
-  XCircle
 } from 'lucide-react';
+import { SearchTicket } from '../types/Ticket';
 
 interface SearchFilters {
   keyword: string;
@@ -48,30 +43,13 @@ interface SearchFilters {
   assignedTo: string;
 }
 
-interface Ticket {
-  id: number;
-  ticketId: string;
-  problemType: string;
-  problemDescription: string;
-  fullName: string;
-  department: string;
-  division?: string;
-  status: string;
-  priority: string;
-  createdAt: string;
-  updatedAt?: string;
-  assignedTo?: {
-    fullName: string;
-  };
-  resolvedAt?: string;
-}
 
 const SearchPage: React.FC = () => {
   const { isAuthenticated, logout } = useAuth();
   const { lastTicketUpdate } = useWebSocket();
   const { t } = useLanguage();
   
-  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [tickets, setTickets] = useState<SearchTicket[]>([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
   const [currentFilters, setCurrentFilters] = useState<SearchFilters | null>(null);
@@ -96,27 +74,31 @@ const SearchPage: React.FC = () => {
   //   );
   // }, [tickets, debouncedSearchKeyword]);
 
-  const api = axios.create({
-    baseURL: process.env.REACT_APP_API_URL,
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-    }
-  });
+  const api = useMemo(() => {
+    const instance = axios.create({
+      baseURL: process.env.REACT_APP_API_URL,
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+      }
+    });
 
-  // Interceptor เพื่อจัดการ token หมดอายุ
-  api.interceptors.response.use(
-    (response) => response,
-    async (error) => {
-      if (error.response?.status === 401) {
-        toast.error(t('messages.sessionExpired'));
-        logout();
+    // Interceptor เพื่อจัดการ token หมดอายุ
+    instance.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        if (error.response?.status === 401) {
+          toast.error(t('messages.sessionExpired'));
+          logout();
+          return Promise.reject(error);
+        }
         return Promise.reject(error);
       }
-      return Promise.reject(error);
-    }
-  );
+    );
 
-  const searchTickets = async (filters: SearchFilters, page: number = 1) => {
+    return instance;
+  }, [t, logout]);
+
+  const searchTickets = useCallback(async (filters: SearchFilters, page: number = 1) => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -186,7 +168,7 @@ const SearchPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [api, t, sortBy, sortOrder, pagination.limit]);
 
   const handleSearch = (filters: SearchFilters) => {
     searchTickets(filters, 1);
@@ -220,7 +202,7 @@ const SearchPage: React.FC = () => {
     if (currentFilters) {
       searchTickets(currentFilters, 1);
     }
-  }, [sortBy, sortOrder]);
+  }, [sortBy, sortOrder, currentFilters, searchTickets]);
 
   const exportResults = async () => {
     if (!currentFilters) {
@@ -287,16 +269,6 @@ const SearchPage: React.FC = () => {
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'รอดำเนินการ': return <Clock className="w-4 h-4 text-yellow-500" />;
-      case 'กำลังดำเนินการ': return <Activity className="w-4 h-4 text-blue-500" />;
-      case 'รอข้อมูลเพิ่มเติม': return <AlertCircle className="w-4 h-4 text-orange-500" />;
-      case 'เสร็จสิ้น': return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'ยกเลิก': return <XCircle className="w-4 h-4 text-red-500" />;
-      default: return <Clock className="w-4 h-4 text-gray-400" />;
-    }
-  };
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -617,7 +589,7 @@ const SearchPage: React.FC = () => {
                           <div className="flex items-center space-x-4 flex-wrap">
                             <div className="relative">
                               <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
-                                <Ticket className="h-6 w-6 text-white" />
+                                <TicketIcon className="h-6 w-6 text-white" />
                               </div>
                             </div>
                             <div>
@@ -726,7 +698,7 @@ const SearchPage: React.FC = () => {
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center space-x-3">
                             <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg">
-                              <Ticket className="h-5 w-5 text-white" />
+                              <TicketIcon className="h-5 w-5 text-white" />
                             </div>
                             <span className="font-mono text-sm bg-gradient-to-r from-primary-100 to-purple-100 dark:from-primary-900/30 dark:to-purple-900/30 px-3 py-1 rounded-xl font-bold text-primary-700 dark:text-primary-300">
                               {ticket.ticketId}

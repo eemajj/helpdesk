@@ -217,7 +217,28 @@
       "inProgress": "In Progress",
       "waitingInfo": "Waiting for Information",
       "completed": "Completed",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "รอดำเนินการ": "Pending",
+      "กำลังดำเนินการ": "In Progress",
+      "รอข้อมูลเพิ่มเติม": "Waiting for Information",
+      "เสร็จสิ้น": "Completed",
+      "ยกเลิก": "Cancelled",
+      "วิกฤต": "Critical",
+      "เร่งด่วนมาก": "Very Urgent",
+      "เร่งด่วน": "Urgent",
+      "สูง": "High",
+      "ปกติ": "Normal",
+      "ต่ำ": "Low",
+      "ต่ำมาก": "Very Low",
+      "ต่ำสุด": "Lowest",
+      "CRITICAL": "Critical",
+      "URGENT": "Urgent",
+      "HIGH": "High",
+      "ELEVATED": "Elevated",
+      "NORMAL": "Normal",
+      "LOW": "Low",
+      "VERY_LOW": "Very Low",
+      "LOWEST": "Lowest"
     },
     "details": {
       "ticketId": "Ticket ID",
@@ -300,11 +321,17 @@
       "unassigned": "Unassigned"
     },
     "ticketStatus": {
+      "PENDING": "Pending",
+      "IN_PROGRESS": "In Progress",
+      "WAITING_INFO": "Waiting for Info",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled",
       "รอดำเนินการ": "Pending",
       "กำลังดำเนินการ": "In Progress",
       "รอข้อมูลเพิ่มเติม": "Waiting for Info",
       "เสร็จสิ้น": "Completed",
-      "ยกเลิก": "Cancelled"
+      "ยกเลิก": "Cancelled",
+      "unassigned": "Unassigned"
     },
     "myTickets": "My Tickets",
     "noTicketsInThisCategory": "No tickets in this category",
@@ -316,9 +343,6 @@
       "manageTickets": "Manage Tickets",
       "assignTickets": "Assign Tickets",
       "autoAssign": "Auto Assign"
-    },
-    "ticketStatus": {
-      "unassigned": "Unassigned"
     }
   },
   "common": {
@@ -350,7 +374,13 @@
     "createdAt": "Created At",
     "actions": "Actions",
     "createUser": "Create User",
-    "accept": "Accept"
+    "accept": "Accept",
+    "user": "User",
+    "role": {
+      "admin": "System Administrator",
+      "support": "IT Support",
+      "user": "User"
+    }
   },
   "footer": {
     "copyright": "© 2025 Department of Women's Affairs and Family Development - Helpdesk System"

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Clock, CheckCircle, AlertTriangle, Users, Ticket, TrendingUp, Zap } from 'lucide-react';
+import { Activity, Users, Ticket, Zap } from 'lucide-react';
 import MiniChart from './MiniChart';
 
 interface DashboardStats {
@@ -78,7 +78,6 @@ const RealTimeDashboard: React.FC<RealTimeDashboardProps> = ({
   const data = stats || dashboardStats;
   
   const resolutionRate = ((data.resolvedTickets / data.totalTickets) * 100);
-  const pendingRate = ((data.pendingTickets / data.totalTickets) * 100);
 
   return (
     <div className={`space-y-8 ${className}`}>

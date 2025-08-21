@@ -13,7 +13,6 @@ import {
   XCircle,
   User as UserIcon,
   Calendar,
-  Ticket,
   Users,
   Settings,
   RefreshCcw,
@@ -33,11 +32,6 @@ import {
   Database,
   Monitor,
   FileText,
-  Bell,
-  Search,
-  Filter,
-  Eye,
-  ArrowRight,
   Sparkles,
   Flame,
   Star,
@@ -45,28 +39,8 @@ import {
   Crown
 } from 'lucide-react';
 import { User } from '../types/User';
+import { Ticket, DashboardStats } from '../types/Ticket';
 import RealTimeDashboard from '../components/charts/RealTimeDashboard';
-
-// Interfaces
-interface DashboardStats {
-  total: number;
-  pending: number;
-  inProgress: number;
-  completed: number;
-}
-
-interface Ticket {
-  id: number;
-  ticket_id: string;
-  problem_type: string;
-  problem_description: string;
-  full_name: string;
-  department: string;
-  status: string;
-  priority: string;
-  created_at: string;
-  assigned_to_name?: string;
-}
 
 const DashboardPage: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();

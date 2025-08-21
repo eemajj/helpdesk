@@ -10,14 +10,14 @@ interface UserEditModalProps {
 
 const UserEditModal: React.FC<UserEditModalProps> = ({ isOpen, onClose, onSave, user }) => {
   const [formData, setFormData] = useState<User>({ 
-    fullName: '', email: '', position: '', role: 'user', isActive: true, username: '' 
+    fullName: '', email: '', position: '', role: 'user', isActive: true, username: '', password: '' 
   });
 
   const isNewUser = !user?.id;
 
   useEffect(() => {
     if (user) {
-      setFormData(user);
+      setFormData({ ...user, password: '' });
     } else {
       setFormData({ fullName: '', email: '', position: '', role: 'user', isActive: true, username: '', password: '' });
     }
@@ -47,31 +47,31 @@ const UserEditModal: React.FC<UserEditModalProps> = ({ isOpen, onClose, onSave, 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-gray-700">Full Name</label>
-            <input type="text" name="fullName" value={formData.fullName} onChange={handleChange} className="w-full p-2 border rounded" required />
+            <input type="text" name="fullName" value={formData.fullName || ''} onChange={handleChange} className="w-full p-2 border rounded" required />
           </div>
           <div className="mb-4">
             <label className="block text-gray-700">Email</label>
-            <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full p-2 border rounded" required />
+            <input type="email" name="email" value={formData.email || ''} onChange={handleChange} className="w-full p-2 border rounded" required />
           </div>
           {isNewUser && (
             <>
                 <div className="mb-4">
                     <label className="block text-gray-700">Username</label>
-                    <input type="text" name="username" value={formData.username} onChange={handleChange} className="w-full p-2 border rounded" required />
+                    <input type="text" name="username" value={formData.username || ''} onChange={handleChange} className="w-full p-2 border rounded" required />
                 </div>
                 <div className="mb-4">
                     <label className="block text-gray-700">Password</label>
-                    <input type="password" name="password" value={formData.password} onChange={handleChange} className="w-full p-2 border rounded" required />
+                    <input type="password" name="password" value={formData.password || ''} onChange={handleChange} className="w-full p-2 border rounded" required />
                 </div>
             </>
           )}
           <div className="mb-4">
             <label className="block text-gray-700">Position</label>
-            <input type="text" name="position" value={formData.position} onChange={handleChange} className="w-full p-2 border rounded" />
+            <input type="text" name="position" value={formData.position || ''} onChange={handleChange} className="w-full p-2 border rounded" />
           </div>
           <div className="mb-4">
             <label className="block text-gray-700">Role</label>
-            <select name="role" value={formData.role} onChange={handleChange} className="w-full p-2 border rounded">
+            <select name="role" value={formData.role || 'user'} onChange={handleChange} className="w-full p-2 border rounded">
               <option value="user">User</option>
               <option value="support">Support</option>
               <option value="admin">Admin</option>
@@ -79,7 +79,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({ isOpen, onClose, onSave, 
           </div>
           <div className="mb-4">
             <label className="block text-gray-700">Status</label>
-            <select name="isActive" value={String(formData.isActive)} onChange={(e) => setFormData(prev => ({...prev, isActive: e.target.value === 'true'}))} className="w-full p-2 border rounded">
+            <select name="isActive" value={String(formData.isActive ?? true)} onChange={(e) => setFormData(prev => ({...prev, isActive: e.target.value === 'true'}))} className="w-full p-2 border rounded">
               <option value="true">Active</option>
               <option value="false">Inactive</option>
             </select>

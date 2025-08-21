@@ -1,5 +1,5 @@
 
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -9,6 +9,7 @@ import Layout from './components/Layout';
 import DocumentTitle from './components/DocumentTitle';
 import { SupportRoute, AdminRoute } from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
+import { PerformanceMonitor, registerServiceWorker, preloadCriticalResources } from './utils/performance';
 
 // ⚡ ULTRA OPTIMIZATION: Lazy load pages for faster initial load
 const HomePage = React.lazy(() => import('./pages/HomePage'));
@@ -33,6 +34,31 @@ const LoadingSpinner = () => {
 
 const App: React.FC = () => {
   const { t } = useLanguage();
+
+  // ⚡ Performance optimizations on app start
+  useEffect(() => {
+    PerformanceMonitor.start('app-initialization');
+    
+    // Register service worker for caching
+    registerServiceWorker();
+    
+    // Preload critical resources
+    preloadCriticalResources();
+    
+    // Performance monitoring
+    setTimeout(() => {
+      PerformanceMonitor.end('app-initialization');
+    }, 100);
+
+    // Cleanup function
+    return () => {
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          type: 'CLEANUP_CACHE'
+        });
+      }
+    };
+  }, []);
 
   return (
     <ErrorBoundary>

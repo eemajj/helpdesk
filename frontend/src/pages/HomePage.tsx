@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { HelpCircle, Search, Clock, Users, FileText, Shield, Zap, Award, ArrowRight, Star } from 'lucide-react';
+import { Search, FileText, Shield, Zap, Award, ArrowRight, Star } from 'lucide-react';
 import { useLanguage } from '../hooks/useLanguage';
 
 const HomePage: React.FC = () => {
