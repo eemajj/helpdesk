@@ -1,0 +1,15 @@
+backend/
+node_modules/
+*.log
+.env*
+.DS_Store
+*.md
+docs/
+.git/
+.github/
+docker-compose*.yml
+Dockerfile*
+README.md
+SECURITY_SETUP.md
+DEPLOYMENT-READY.md
+TEST_CREDENTIALS.md

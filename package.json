@@ -1,0 +1,26 @@
+{
+  "name": "dwf-helpdesk-system",
+  "version": "1.0.3",
+  "description": "DWF Helpdesk System - Government Support System",
+  "main": "index.js",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build",
+    "start": "cd frontend && npm start",
+    "dev": "cd frontend && npm start",
+    "install-all": "cd frontend && npm install && cd ../backend && npm install"
+  },
+  "keywords": [
+    "helpdesk",
+    "government",
+    "support",
+    "dwf",
+    "react",
+    "typescript"
+  ],
+  "author": "DWF Development Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}
