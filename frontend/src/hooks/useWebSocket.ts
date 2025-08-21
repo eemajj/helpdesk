@@ -33,7 +33,7 @@ export const useWebSocket = () => {
   const [lastTicketUpdate, setLastTicketUpdate] = useState<TicketUpdateData | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
-  const connect = useCallback(() => {
+  const connect = useCallback(async () => {
     // Enhanced connection prevention with better state checks
     if (wsRef.current?.readyState === WebSocket.OPEN || 
         wsRef.current?.readyState === WebSocket.CONNECTING || 
@@ -41,8 +41,45 @@ export const useWebSocket = () => {
       return;
     }
 
-    const token = localStorage.getItem('accessToken');
+    let token = localStorage.getItem('accessToken');
     if (!token) return;
+
+    // Check if token is expired and refresh if needed
+    try {
+      const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+      const currentTime = Math.floor(Date.now() / 1000);
+      
+      if (tokenPayload.exp < currentTime) {
+        console.log('🔄 WebSocket: Access token expired, refreshing...');
+        
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (!refreshToken) {
+          console.error('❌ No refresh token available');
+          return;
+        }
+
+        try {
+          const response = await axios.post('http://localhost:3002/api/auth/refresh', {
+            refreshToken
+          });
+          
+          if (response.data.success && response.data.accessToken) {
+            token = response.data.accessToken as string;
+            localStorage.setItem('accessToken', token);
+            console.log('✅ WebSocket: Token refreshed successfully');
+          } else {
+            console.error('❌ WebSocket: Token refresh failed');
+            return;
+          }
+        } catch (refreshError) {
+          console.error('❌ WebSocket: Token refresh error:', refreshError);
+          return;
+        }
+      }
+    } catch (tokenError) {
+      console.error('❌ WebSocket: Token validation error:', tokenError);
+      return;
+    }
 
     try {
       // Optimized WebSocket URL with connection tracking
@@ -77,7 +114,7 @@ export const useWebSocket = () => {
 
       wsRef.current.onerror = (error) => {
         console.warn('⚠️ WebSocket error:', error);
-        console.log('🔗 Connection URL:', `${baseUrl}/api/ws?token=${token.substring(0, 20)}...`);
+        console.log('🔗 Connection URL:', `${baseUrl}/api/ws?token=${token ? token.substring(0, 20) : 'null'}...`);
         setIsConnected(false);
         // Don't set wsRef to null here, let onclose handle it
       };
