@@ -13,7 +13,6 @@ import {
   AlertTriangle,
   GitBranch,
   Building,
-  Mail,
   Users,
   Shield,
   Palette,
@@ -49,6 +48,7 @@ interface SettingsTabConfig {
 
 const AdminSettingsPage: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<AdminSettingsTab>('ticket-system');
 
