@@ -19,6 +19,7 @@ const LoginPage = React.lazy(() => import('./pages/LoginPage'));
 const DashboardPage = React.lazy(() => import('./pages/DashboardPage'));
 const SearchPage = React.lazy(() => import('./pages/SearchPage'));
 const AdminDashboardPage = React.lazy(() => import('./pages/AdminDashboardPage'));
+const AdminSettingsPage = React.lazy(() => import('./pages/AdminSettingsPage'));
 const UnauthorizedPage = React.lazy(() => import('./pages/UnauthorizedPage'));
 
 // Ultra-fast loading component
@@ -99,6 +100,14 @@ const App: React.FC = () => {
                         element={
                           <AdminRoute>
                             <AdminDashboardPage />
+                          </AdminRoute>
+                        }
+                      />
+                      <Route
+                        path="/admin/settings"
+                        element={
+                          <AdminRoute>
+                            <AdminSettingsPage />
                           </AdminRoute>
                         }
                       />

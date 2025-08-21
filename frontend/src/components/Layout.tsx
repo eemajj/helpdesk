@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Moon, Sun, Search, User, Home, Languages, BarChart3, Settings, Headphones, FileText } from 'lucide-react';
+import { Moon, Sun, Search, User, Home, Languages, BarChart3, Settings, Headphones, FileText, Users } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../hooks/useLanguage';
@@ -192,18 +192,32 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     </Link>
 
                     {user && user.role === 'admin' && (
-                      <Link
-                        to="/admin/dashboard"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                          isActive('/admin/dashboard') 
-                            ? 'text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/20' 
-                            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50'
-                        }`}
-                      >
-                        <Settings className="w-5 h-5" />
-                        <span>{t('navigation.admin')}</span>
-                      </Link>
+                      <>
+                        <Link
+                          to="/admin/dashboard"
+                          onClick={() => setMobileMenuOpen(false)}
+                          className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                            isActive('/admin/dashboard') 
+                              ? 'text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/20' 
+                              : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                          }`}
+                        >
+                          <Users className="w-5 h-5" />
+                          <span>จัดการระบบ</span>
+                        </Link>
+                        <Link
+                          to="/admin/settings"
+                          onClick={() => setMobileMenuOpen(false)}
+                          className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                            isActive('/admin/settings') 
+                              ? 'text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/20' 
+                              : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                          }`}
+                        >
+                          <Settings className="w-5 h-5" />
+                          <span>การตั้งค่าระบบ</span>
+                        </Link>
+                      </>
                     )}
                   </>
                 )}

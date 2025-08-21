@@ -1,105 +1,213 @@
-# === DWF Helpdesk System .gitignore ===
+# ===================================================
+# DWF Helpdesk System - SECURITY-FOCUSED .gitignore
+# ===================================================
 
-# === Dependencies ===
-**/node_modules/
-**/npm-debug.log*
-**/yarn-debug.log*
-**/yarn-error.log*
-**/package-lock.json
-**/yarn.lock
+# === 🔒 CRITICAL SECURITY FILES ===
+**/.env*
+**/config.json
+**/secrets.json
+**/credentials.json
+**/*config*.json
+**/*secret*
+**/*credential*
+**/*password*
+**/*private*
+**/*key*
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.jks
+**/*.keystore
+**/*.crt
+**/*.cer
+**/*.p7b
 
-# === Environment Variables ===
+# === 🔐 Authentication & JWT ===
+**/jwt-secret*
+**/auth-config*
+**/session-secret*
+**/token-secret*
+**/refresh-token*
+**/access-token*
+
+# === 💳 API Keys & External Services ===
+**/*api-key*
+**/*api_key*
+**/*apikey*
+**/google-credentials*
+**/aws-credentials*
+**/azure-credentials*
+**/*oauth*
+**/*smtp*
+**/*mail*
+
+# === 🗄️ Database Security ===
+**/*.sqlite*
+**/*.db
+**/*.sql
+**/database.json
+**/db-config*
+**/connection-string*
+**/database-url*
+**/prisma/.env
+**/migrations/*.sql
+**/seeds/*.sql
+**/dumps/
+**/backups/
+
+# === 📁 Environment Files ===
 **/.env
-**/.env.local
-**/.env.development.local
-**/.env.test.local
-**/.env.production.local
+**/.env.*
+**/environment.ts
+**/environment.js
+**/env.ts
+**/env.js
+**/.environment
+**/config/production.json
+**/config/development.json
+**/config/staging.json
 
-# === Logs ===
-**/logs
+# === 📊 Logs & Sensitive Data ===
+**/logs/
 **/*.log
-**/backend_new.log
-**/backend.log
-**/frontend.log
+**/error.log
+**/access.log
+**/debug.log
+**/audit.log
+**/security.log
+**/user-data/
+**/customer-data/
+**/personal-data/
+**/pii/
 
-# === Runtime data ===
-**/pids
-**/*.pid
-**/*.seed
-**/*.pid.lock
-
-# === Build outputs ===
+# === 🔧 Dependencies & Build ===
+**/node_modules/
 **/build/
 **/dist/
-**/.next/
 **/out/
+**/.next/
+**/coverage/
+**/.nyc_output/
+**/*.tgz
+**/package-lock.json
+**/yarn.lock
+**/pnpm-lock.yaml
 
-# === Database ===
-**/*.sqlite
-**/*.sqlite3
-**/*.db
-**/prisma/migrations/*/migration.sql
-
-# === Docker ===
+# === 🐳 Docker Security ===
 **/docker-compose.override.yml
-**/.dockerignore
+**/docker-compose.production.yml
+**/docker-compose.staging.yml
+**/Dockerfile.production
+**/Dockerfile.staging
+**/.docker/
+**/docker-secrets/
 
-# === IDE ===
-**/.vscode/
+# === 📱 Mobile & Certificates ===
+**/ios/
+**/android/
+**/*.mobileprovision
+**/*.certSigningRequest
+**/*.p12
+**/*.ipa
+**/*.apk
+
+# === 🛠️ IDE & Editor ===
+**/.vscode/settings.json
+**/.vscode/launch.json
 **/.idea/
+**/jetbrains/
 **/*.swp
 **/*.swo
 **/*~
+**/.history/
 
-# === OS ===
+# === 💻 OS Security ===
 **/.DS_Store
 **/Thumbs.db
+**/desktop.ini
 **/*.tmp
 **/*.temp
+**/System Volume Information/
 
-# === Coverage directory used by tools like istanbul ===
-**/coverage/
-**/.nyc_output
+# === 📸 File Uploads & User Content ===
+**/uploads/
+**/user-uploads/
+**/attachments/
+**/media/
+**/files/
+**/documents/
+**/images/
+**/avatars/
+**/profile-pictures/
 
-# === Dependency directories ===
+# === 🧪 Testing Secrets ===
+**/test-credentials*
+**/test-config*
+**/test-env*
+**/cypress.env.json
+**/playwright.config.ts
+**/.env.test
+
+# === 📦 Package Managers ===
+**/.npm/
+**/.yarn/
+**/.pnpm/
 **/jspm_packages/
 
-# === Optional npm cache directory ===
-**/.npm
+# === 🔍 Analysis & Monitoring ===
+**/sonar-project.properties
+**/.scannerwork/
+**/newrelic.js
+**/sentry.properties
 
-# === Optional REPL history ===
-**/.node_repl_history
-
-# === Output of 'npm pack' ===
-**/*.tgz
-
-# === Yarn Integrity file ===
-**/.yarn-integrity
-
-# === Claude AI ===
-**/.claude/
-
-# === Uploads ===
-**/uploads/
-**/public/uploads/
-
-# === Temporary files ===
+# === ⚡ Runtime & Cache ===
+**/.cache/
 **/tmp/
 **/temp/
+**/*.pid
+**/*.seed
+**/*.pid.lock
+**/.nyc_output/
 
-# === Backup files ===
-**/*.backup
-**/*.bak
-**/*-backup.*
+# === 🚀 Deployment ===
+**/deployment/
+**/deploy/
+**/.terraform/
+**/terraform.tfstate*
+**/terraform.tfvars*
+**/.serverless/
+**/serverless.yml
+**/vercel.json
+**/netlify.toml
 
-# === Testing ===
-**/cypress/videos/
-**/cypress/screenshots/
+# === 📚 Documentation Security ===
+TEST_CREDENTIALS.md
+PRODUCTION_SETUP.md
+SECURITY_NOTES.md
+DEPLOYMENT_GUIDE.md
+**/*credentials*.md
+**/*secrets*.md
+**/*password*.md
 
-# === Production ===
-**/.env.production
+# === 🔒 Custom Security Extensions ===
+**/*.secret
+**/*.private
+**/*.confidential
+**/*.sensitive
+**/*.protected
+**/*.encrypted
 
-# === Custom ===
+# === 📋 Development Notes (Potentially Sensitive) ===
 **/FIXES_SUMMARY.md
 **/TODO.md
+**/NOTES.md
+**/DEBUG.md
 **/API_DOCUMENTATION.md
+**/INTERNAL_DOCS.md
+
+# ===================================================
+# Last Updated: August 21, 2025
+# Security Level: MAXIMUM PROTECTION
+# Purpose: Prevent accidental exposure of sensitive data
+# ===================================================

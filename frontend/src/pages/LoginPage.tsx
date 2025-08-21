@@ -191,14 +191,7 @@ const LoginPage: React.FC = () => {
                 {t('login.forgotPassword')}
               </p>
               
-              {/* Demo Credentials */}
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4 text-left">
-                <h4 className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-2">บัญชีทดสอบ:</h4>
-                <div className="space-y-1 text-xs text-yellow-700 dark:text-yellow-300">
-                  <div><strong>Admin:</strong> admin / admin123</div>
-                  <div><strong>Support:</strong> support1 / support123</div>
-                </div>
-              </div>
+              {/* Demo Credentials - REMOVED FOR PRODUCTION SECURITY */}
             </div>
           </div>
         </div>

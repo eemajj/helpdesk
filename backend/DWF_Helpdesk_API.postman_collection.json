@@ -20,6 +20,36 @@
       "key": "refreshToken",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "adminPassword",
+      "value": "SET_YOUR_ADMIN_PASSWORD",
+      "type": "string"
+    },
+    {
+      "key": "supportPassword",
+      "value": "SET_YOUR_SUPPORT_PASSWORD",
+      "type": "string"
+    },
+    {
+      "key": "newUsername",
+      "value": "testuser",
+      "type": "string"
+    },
+    {
+      "key": "newUserPassword",
+      "value": "testpass123",
+      "type": "string"
+    },
+    {
+      "key": "newUserFullName",
+      "value": "Test User",
+      "type": "string"
+    },
+    {
+      "key": "newUserEmail",
+      "value": "test@example.com",
+      "type": "string"
     }
   ],
   "auth": {
@@ -67,7 +97,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"DWF_Admin_2024\"\n}"
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"{{adminPassword}}\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/auth/login",
@@ -385,7 +415,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"newuser\",\n  \"password\": \"newuser123\",\n  \"fullName\": \"นายผู้ใช้ ใหม่\",\n  \"email\": \"newuser@dwf.go.th\",\n  \"role\": \"user\"\n}"
+              "raw": "{\n  \"username\": \"{{newUsername}}\",\n  \"password\": \"{{newUserPassword}}\",\n  \"fullName\": \"{{newUserFullName}}\",\n  \"email\": \"{{newUserEmail}}\",\n  \"role\": \"user\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/users",
@@ -568,7 +598,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"username\": \"support1\",\n  \"password\": \"DWF_Support_2024\"\n}"
+                  "raw": "{\n  \"username\": \"support1\",\n  \"password\": \"{{supportPassword}}\"\n}"
                 },
                 "url": {
                   "raw": "{{baseUrl}}/auth/login",

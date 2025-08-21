@@ -17,63 +17,55 @@ import { websocketService } from './services/websocketService'
 import { tokenBlacklist } from './services/tokenBlacklist'
 import { cleanupOldFiles } from './middleware/fileUpload'
 
+// ⚡ Ultra Performance & Security Imports
+import { 
+  securityHeaders, 
+  apiRateLimit, 
+  corsOptions,
+  sanitizeInput,
+  sqlInjectionProtection,
+  productionSecurityCheck
+} from './middleware/security.js'
+import {
+  responseTimeMonitor,
+  smartCompression,
+  performanceMonitoring,
+  staticAssetOptimization,
+  requestSizeLimiter
+} from './middleware/performance.js'
+import optimizedApiRouter from './routes/optimized-api.js'
+
 // Import Swagger configuration
 import { swaggerSpec, swaggerUi, swaggerUiOptions } from './swagger/swagger.config';
 
 const app = express();
 const port = parseInt(process.env.PORT || '3002');
 
-// Trust proxy for proper rate limiting
+// ⚡ ULTRA PERFORMANCE & SECURITY SETUP
 app.set('trust proxy', 1);
 
-// Security middleware with enhanced CSP
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "https:"],
-      scriptSrc: ["'self'"],
-      connectSrc: ["'self'", "http://localhost:3000", "http://localhost:3002"],
-      frameSrc: ["'none'"],
-      objectSrc: ["'none'"],
-      upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
-    },
-  },
-  crossOriginEmbedderPolicy: false
-}))
+// 🔒 Advanced Security Middleware
+app.use(productionSecurityCheck);
+app.use(securityHeaders);
+app.use(sanitizeInput);
+app.use(sqlInjectionProtection);
 
-// Rate limiting middleware
-app.use(generalLimiter)
+// 🚦 Smart Rate Limiting
+app.use('/api/', apiRateLimit);
+app.use(generalLimiter);
+
+// ⚡ Performance Optimization Middleware
+app.use(responseTimeMonitor);
+app.use(performanceMonitoring);
+app.use(smartCompression);
+app.use(staticAssetOptimization);
+app.use(requestSizeLimiter(10 * 1024 * 1024)); // 10MB limit
 
 // Logging middleware
 app.use(morgan('combined'))
 
-// Enhanced CORS middleware
-const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000'];
-app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, proxy requests, etc.)
-    if (!origin) return callback(null, true);
-    
-    // Allow localhost on any port for development
-    if (origin?.includes('localhost') || origin?.includes('127.0.0.1')) {
-      return callback(null, true);
-    }
-    
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.log('🚫 CORS blocked origin:', origin);
-      callback(new Error('Not allowed by CORS policy'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  maxAge: 86400 // 24 hours
-}))
+// 🌐 Ultra-Secure CORS Configuration
+app.use(cors(corsOptions));
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }))
@@ -117,7 +109,10 @@ app.get('/api/health/db', async (req, res) => {
 // Swagger API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions))
 
-// API routes
+// ⚡ ULTRA-OPTIMIZED API ROUTES
+app.use('/api/v2', optimizedApiRouter); // New optimized endpoints
+
+// Standard API routes (legacy support)
 app.use('/api/auth', authRoutes)
 app.use('/api/users', userProfileRoutes)
 app.use('/api/tickets', ticketRoutes)
@@ -188,16 +183,16 @@ app.get('/api/priorities', async (req, res) => {
     })
   } catch (error) {
     console.error('Get priorities error:', error)
-    // Fallback to hardcoded data if database fails
+    // Fallback to hardcoded data if database fails (converted to minutes for testing)
     const fallbackPriorities = [
-      { id: 1, name: 'วิกฤต', level: 8, description: 'ต้องแก้ไขทันที (1 ชั่วโมง)', slaHours: 1, color: '#dc2626' },
-      { id: 2, name: 'เร่งด่วนมาก', level: 7, description: 'แก้ไขภายใน 2 ชั่วโมง', slaHours: 2, color: '#ea580c' },
-      { id: 3, name: 'เร่งด่วน', level: 6, description: 'แก้ไขภายใน 4 ชั่วโมง', slaHours: 4, color: '#d97706' },
-      { id: 4, name: 'สูง', level: 5, description: 'แก้ไขภายใน 8 ชั่วโมง', slaHours: 8, color: '#ca8a04' },
-      { id: 5, name: 'ปกติ', level: 4, description: 'แก้ไขภายใน 1 วัน', slaHours: 24, color: '#16a34a' },
-      { id: 6, name: 'ต่ำ', level: 3, description: 'แก้ไขภายใน 2 วัน', slaHours: 48, color: '#0d9488' },
-      { id: 7, name: 'ต่ำมาก', level: 2, description: 'แก้ไขภายใน 3 วัน', slaHours: 72, color: '#0891b2' },
-      { id: 8, name: 'ต่ำสุด', level: 1, description: 'แก้ไขตามความเหมาะสม', slaHours: 168, color: '#6b7280' }
+      { id: 1, name: 'วิกฤต', level: 8, description: 'ต้องแก้ไขทันที (5 นาที)', slaHours: 1, slaMinutes: 5, color: '#dc2626' },
+      { id: 2, name: 'เร่งด่วนมาก', level: 7, description: 'แก้ไขภายใน 10 นาที', slaHours: 2, slaMinutes: 10, color: '#ea580c' },
+      { id: 3, name: 'เร่งด่วน', level: 6, description: 'แก้ไขภายใน 15 นาที', slaHours: 4, slaMinutes: 15, color: '#d97706' },
+      { id: 4, name: 'สูง', level: 5, description: 'แก้ไขภายใน 30 นาที', slaHours: 8, slaMinutes: 30, color: '#ca8a04' },
+      { id: 5, name: 'ปกติ', level: 4, description: 'แก้ไขภายใน 60 นาที', slaHours: 24, slaMinutes: 60, color: '#16a34a' },
+      { id: 6, name: 'ต่ำ', level: 3, description: 'แก้ไขภายใน 2 ชั่วโมง', slaHours: 48, slaMinutes: 120, color: '#0d9488' },
+      { id: 7, name: 'ต่ำมาก', level: 2, description: 'แก้ไขภายใน 4 ชั่วโมง', slaHours: 72, slaMinutes: 240, color: '#0891b2' },
+      { id: 8, name: 'ต่ำสุด', level: 1, description: 'แก้ไขภายใน 1 วัน', slaHours: 168, slaMinutes: 1440, color: '#6b7280' }
     ]
     
     res.json({
